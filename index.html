@@ -1,0 +1,3964 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iron Ascension - 덱빌딩 로그라이크</title>
+  <style>
+    :root {
+      --bg-dark: #0a0b10;
+      --bg-panel: #131722;
+      --bg-card: #1c2233;
+      --border-color: #2e3852;
+      --accent-gold: #e5b85c;
+      --accent-gold-glow: rgba(229, 184, 92, 0.4);
+      --accent-red: #e74c3c;
+      --accent-blue: #3498db;
+      --accent-green: #2ecc71;
+      --accent-purple: #9b59b6;
+      --text-main: #f0f3f8;
+      --text-muted: #8b9bb4;
+      --energy-color: #e67e22;
+      --hp-color: #e74c3c;
+      --block-color: #3498db;
+      --shadow-elevation: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    #top-bar {
+      height: 54px;
+      background: linear-gradient(180deg, #181d2c 0%, #0d111a 100%);
+      border-bottom: 2px solid #2a334a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .top-section {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      background: rgba(0,0,0,0.4);
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid #313d59;
+    }
+
+    .stat-badge.hp { color: #ff6b6b; }
+    .stat-badge.gold { color: #ffd166; }
+    .stat-badge.floor { color: #4dabf7; }
+    .stat-badge.ascension { color: #da77f2; }
+
+    .hp-bar-container {
+      width: 110px;
+      height: 10px;
+      background: #2b1114;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid #571b22;
+      position: relative;
+    }
+    .hp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e03131, #ff6b6b);
+      width: 100%;
+      transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .relics-container {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      max-width: 420px;
+      overflow-x: auto;
+      padding: 2px 4px;
+    }
+    .relic-item {
+      width: 36px;
+      height: 36px;
+      background: #1e2538;
+      border: 1px solid var(--accent-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      position: relative;
+      box-shadow: 0 0 10px rgba(229,184,92,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .relic-item:hover {
+      transform: scale(1.18);
+      box-shadow: 0 0 15px rgba(229,184,92,0.6);
+      z-index: 10;
+    }
+    .relic-counter {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      background: #e74c3c;
+      color: white;
+      font-size: 0.65rem;
+      font-weight: 800;
+      border-radius: 8px;
+      padding: 1px 4px;
+    }
+
+    .btn-top {
+      background: #1e263c;
+      border: 1px solid #3c4a6e;
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-top:hover {
+      background: #2a3656;
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    /* Main Container Views */
+    #main-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #151a28 0%, #080a0f 100%);
+    }
+
+    .view-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .view-screen.active {
+      display: flex;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* TITLE / MENU SCREEN */
+    #title-screen {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(circle, #1a2236 0%, #080a10 80%);
+      z-index: 50;
+    }
+    .title-banner {
+      margin-bottom: 30px;
+    }
+    .title-banner h1 {
+      font-size: 3.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #fff7d6 0%, #d4af37 60%, #8a6a12 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(212,175,55,0.4);
+    }
+    .title-banner p {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      letter-spacing: 2px;
+      margin-top: 8px;
+    }
+    .menu-options {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 320px;
+    }
+    .btn-menu {
+      padding: 14px 20px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: #fff;
+      background: linear-gradient(180deg, #2b354d 0%, #181e2e 100%);
+      border: 1px solid #4a5c85;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .btn-menu:hover {
+      background: linear-gradient(180deg, #3d4c6f 0%, #222b42 100%);
+      border-color: var(--accent-gold);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(229,184,92,0.3);
+      color: var(--accent-gold);
+    }
+    .ascension-selector {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 1px solid #3c4866;
+      margin-top: 10px;
+    }
+    .ascension-selector button {
+      background: #252e44;
+      border: 1px solid #485882;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .ascension-selector button:hover {
+      background: var(--accent-gold);
+      color: black;
+    }
+
+    /* MAP SCREEN */
+    #map-screen {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: radial-gradient(circle at center, #141a29 0%, #090c14 100%);
+    }
+    .map-header {
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10,13,20,0.8);
+      border-bottom: 1px solid #232b40;
+    }
+    .map-legend {
+      display: flex;
+      gap: 16px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .map-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 40px 0 100px 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .map-scroll-area::-webkit-scrollbar {
+      width: 8px;
+    }
+    .map-scroll-area::-webkit-scrollbar-thumb {
+      background: #2a344d;
+      border-radius: 4px;
+    }
+    .map-canvas-container {
+      position: relative;
+      width: 600px;
+    }
+    #map-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .map-floor-row {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 75px;
+      position: relative;
+      z-index: 2;
+    }
+    .map-node {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #1b2133;
+      border: 2px solid #374464;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      cursor: not-allowed;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      opacity: 0.45;
+      color: #7b8ca8;
+    }
+    .map-node.boss {
+      width: 64px;
+      height: 64px;
+      font-size: 1.8rem;
+      border-color: #8e44ad;
+      background: #2c163b;
+    }
+    .map-node.visited {
+      opacity: 0.3;
+      border-color: #555;
+      background: #111;
+      filter: grayscale(1);
+    }
+    .map-node.available {
+      opacity: 1;
+      cursor: pointer;
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 18px var(--accent-gold-glow);
+      color: #fff;
+      transform: scale(1.1);
+      animation: pulse-node 1.6s infinite alternate;
+    }
+    .map-node.available:hover {
+      transform: scale(1.25);
+      box-shadow: 0 0 25px rgba(229,184,92,0.8);
+      border-width: 3px;
+    }
+    .map-node.current {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 20px rgba(46,204,113,0.7);
+      opacity: 1;
+    }
+    @keyframes pulse-node {
+      0% { box-shadow: 0 0 10px rgba(229,184,92,0.3); }
+      100% { box-shadow: 0 0 22px rgba(229,184,92,0.85); }
+    }
+
+    /* COMBAT SCREEN */
+    #combat-screen {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    .combat-arena {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 80px;
+      position: relative;
+    }
+
+    /* Floating Combat Text */
+    .fct-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 500;
+    }
+    .fct {
+      position: absolute;
+      font-weight: 900;
+      font-size: 1.8rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.9), 0 0 4px #000;
+      animation: fct-float 1.1s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    }
+    .fct.damage { color: #ff4757; }
+    .fct.block { color: #2ed573; }
+    .fct.buff { color: #eccc68; }
+    .fct.poison { color: #a55eea; }
+    @keyframes fct-float {
+      0% { opacity: 0; transform: translateY(0) scale(0.6); }
+      20% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+      80% { opacity: 1; transform: translateY(-45px) scale(1); }
+      100% { opacity: 0; transform: translateY(-65px) scale(0.85); }
+    }
+
+    /* Entities (Hero & Monsters) */
+    .combat-entity {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: transform 0.25s ease;
+    }
+    .combat-entity.targeted {
+      filter: drop-shadow(0 0 15px rgba(231,76,60,0.8));
+    }
+    .entity-avatar {
+      width: 130px;
+      height: 130px;
+      border-radius: 16px;
+      background: #192033;
+      border: 3px solid #334266;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.15s, border-color 0.2s;
+    }
+    .entity-avatar.hit {
+      animation: entity-shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+      background: #4a1919;
+      border-color: #ff4757;
+    }
+    @keyframes entity-shake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(5px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
+      40%, 60% { transform: translate3d(7px, 0, 0); }
+    }
+
+    .hero-entity .entity-avatar {
+      background: linear-gradient(135deg, #1c2742 0%, #101626 100%);
+      border-color: #3b5284;
+    }
+    .enemy-group {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .entity-hud {
+      width: 150px;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .entity-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #d1d8e0;
+      text-align: center;
+    }
+    .entity-hp-box {
+      width: 100%;
+      height: 16px;
+      background: #251216;
+      border-radius: 8px;
+      border: 1px solid #4a1a22;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .entity-hp-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #c0392b, #e74c3c);
+      width: 100%;
+      transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .entity-hp-text {
+      position: relative;
+      z-index: 2;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 1px 3px #000;
+    }
+
+    .entity-block-badge {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: #185a9d;
+      color: white;
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 1px 8px;
+      border-radius: 12px;
+      border: 1px solid #43cea2;
+      margin-top: -8px;
+      z-index: 3;
+      box-shadow: 0 2px 8px rgba(67,206,162,0.4);
+    }
+
+    /* Intent Indicator */
+    .intent-bubble {
+      position: absolute;
+      top: -46px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(15,20,30,0.85);
+      border: 1px solid #4a5c82;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      animation: float-intent 2s ease-in-out infinite;
+      cursor: help;
+    }
+    @keyframes float-intent {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .intent-attack { color: #ff6b6b; border-color: #ff6b6b; }
+    .intent-shield { color: #4dabf7; border-color: #4dabf7; }
+    .intent-debuff { color: #da77f2; border-color: #da77f2; }
+    .intent-buff   { color: #ffd166; border-color: #ffd166; }
+
+    /* Buff / Debuff Status Badges */
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: help;
+      position: relative;
+    }
+    .status-str   { background: #5c1d1d; color: #ff9999; border: 1px solid #993333; }
+    .status-dex   { background: #1d3d5c; color: #99ccff; border: 1px solid #336699; }
+    .status-vuln  { background: #5c3d1d; color: #ffbb88; border: 1px solid #996633; }
+    .status-weak  { background: #3d5c1d; color: #c4ff88; border: 1px solid #669933; }
+    .status-poi   { background: #401d5c; color: #e288ff; border: 1px solid #773399; }
+    .status-barr  { background: #1d5c58; color: #88ffef; border: 1px solid #339990; }
+
+    /* Combat Lower Deck & Hand Controls */
+    .combat-controls {
+      height: 250px;
+      position: relative;
+      background: linear-gradient(180deg, transparent 0%, rgba(10,13,20,0.85) 35%, #07090e 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 20px;
+      z-index: 100;
+    }
+
+    /* Hand Area */
+    .hand-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      width: 85%;
+      height: 210px;
+      position: relative;
+    }
+
+    /* Card Item Style */
+    .card-item {
+      width: 140px;
+      height: 195px;
+      background: linear-gradient(145deg, #1b2233 0%, #10141f 100%);
+      border: 2px solid #344365;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.6);
+      margin: 0 -12px;
+      transform-origin: bottom center;
+    }
+    .card-item:hover {
+      transform: translateY(-45px) scale(1.15) !important;
+      z-index: 200 !important;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.8), 0 0 15px var(--accent-gold-glow);
+      border-color: var(--accent-gold);
+    }
+    .card-item.selected {
+      transform: translateY(-55px) scale(1.18) !important;
+      z-index: 210 !important;
+      border-color: #2ecc71 !important;
+      box-shadow: 0 0 25px rgba(46,204,113,0.8) !important;
+    }
+    .card-item.unplayable {
+      filter: brightness(0.6) grayscale(0.5);
+      cursor: not-allowed;
+    }
+    .card-item.upgraded {
+      border-color: #ffd700;
+    }
+    .card-item.upgraded::before {
+      content: '+';
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #ffd700;
+      color: #000;
+      font-weight: 900;
+      font-size: 0.85rem;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 8px #ffd700;
+      z-index: 5;
+    }
+
+    /* Card Cost Gem */
+    .card-cost {
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #e67e22 0%, #b8540b 100%);
+      border: 2px solid #ffd166;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+      z-index: 5;
+    }
+    .card-type-attack { border-top: 3px solid #e74c3c; }
+    .card-type-skill  { border-top: 3px solid #3498db; }
+    .card-type-power  { border-top: 3px solid #9b59b6; }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-left: 20px;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-art-box {
+      width: 100%;
+      height: 60px;
+      background: #141926;
+      border-radius: 6px;
+      border: 1px solid #28324a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+    .card-type-label {
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .card-desc {
+      font-size: 0.7rem;
+      line-height: 1.25;
+      color: #cbd5e1;
+      text-align: center;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 2px;
+    }
+
+    /* Left & Right Combat Controls (Energy & End Turn) */
+    .combat-side-ctrl {
+      position: absolute;
+      bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      z-index: 150;
+    }
+    .combat-side-left {
+      left: 30px;
+    }
+    .combat-side-right {
+      right: 30px;
+    }
+
+    .energy-orb {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff9f43 0%, #ee5253 60%, #5f27cd 100%);
+      border: 3px solid #ffd166;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(255,159,67,0.6);
+      animation: pulse-energy 2.5s infinite alternate;
+    }
+    @keyframes pulse-energy {
+      0% { box-shadow: 0 0 12px rgba(255,159,67,0.4); }
+      100% { box-shadow: 0 0 26px rgba(255,159,67,0.85); }
+    }
+    .energy-val {
+      font-weight: 900;
+      font-size: 1.6rem;
+      color: #fff;
+      line-height: 1;
+    }
+    .energy-max {
+      font-size: 0.75rem;
+      color: #ffd166;
+      font-weight: 700;
+    }
+
+    .pile-badge {
+      background: #171d2b;
+      border: 1px solid #364463;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .pile-badge:hover {
+      background: #232c42;
+      border-color: var(--accent-gold);
+    }
+
+    .btn-end-turn {
+      background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
+      border: 2px solid #ff7979;
+      color: white;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      padding: 16px 28px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(231,76,60,0.5);
+      transition: all 0.2s;
+    }
+    .btn-end-turn:hover {
+      background: linear-gradient(180deg, #ff6b6b 0%, #e03131 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(231,76,60,0.7);
+    }
+
+    /* REWARD SCREEN */
+    #reward-screen {
+      justify-content: center;
+      align-items: center;
+      background: rgba(10,13,20,0.92);
+    }
+    .reward-box {
+      width: 550px;
+      background: #141926;
+      border: 2px solid #394666;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: var(--shadow-elevation);
+      text-align: center;
+    }
+    .reward-title {
+      font-size: 2rem;
+      color: var(--accent-gold);
+      margin-bottom: 20px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+    .reward-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+    .reward-entry {
+      background: #1e2638;
+      border: 1px solid #3d4f75;
+      padding: 14px 20px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .reward-entry:hover {
+      background: #2b3650;
+      border-color: var(--accent-gold);
+      transform: translateX(4px);
+    }
+    .reward-entry.claimed {
+      opacity: 0.4;
+      pointer-events: none;
+      filter: grayscale(1);
+    }
+
+    /* REST SITE SCREEN */
+    #rest-screen {
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, #261710 0%, #08090f 80%);
+    }
+    .campfire-visual {
+      font-size: 5rem;
+      margin-bottom: 20px;
+      animation: fire-flicker 1.5s infinite alternate;
+    }
+    @keyframes fire-flicker {
+      0% { transform: scale(1) rotate(-2deg); filter: drop-shadow(0 0 15px #e67e22); }
+      100% { transform: scale(1.1) rotate(2deg); filter: drop-shadow(0 0 35px #e74c3c); }
+    }
+    .rest-options {
+      display: flex;
+      gap: 30px;
+    }
+    .rest-card {
+      width: 220px;
+      background: #181f2f;
+      border: 2px solid #374669;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+    .rest-card:hover {
+      border-color: var(--accent-gold);
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(229,184,92,0.3);
+    }
+    .rest-icon { font-size: 2.8rem; }
+    .rest-title { font-size: 1.3rem; font-weight: 800; color: var(--accent-gold); }
+    .rest-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+
+    /* SHOP SCREEN */
+    #shop-screen {
+      padding: 30px 50px;
+      background: radial-gradient(circle, #182030 0%, #090c14 90%);
+      overflow-y: auto;
+    }
+    .shop-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #2c3852;
+      padding-bottom: 15px;
+    }
+    .shop-section-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+    }
+    .shop-cards-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .shop-item-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .shop-price-tag {
+      background: #111622;
+      border: 1px solid #ffd166;
+      color: #ffd166;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .shop-relics-grid {
+      display: flex;
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+    .shop-relic-entry {
+      background: #1a2233;
+      border: 1px solid #384869;
+      border-radius: 10px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shop-relic-entry:hover {
+      border-color: var(--accent-gold);
+      background: #242f46;
+    }
+    .shop-removal-card {
+      background: #25161c;
+      border: 2px dashed #e74c3c;
+      border-radius: 10px;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      width: 360px;
+      transition: all 0.2s;
+    }
+    .shop-removal-card:hover {
+      background: #381f28;
+    }
+
+    /* EVENT SCREEN */
+    #event-screen {
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      background: radial-gradient(circle, #1a1e2d 0%, #07090e 90%);
+    }
+    .event-dialog {
+      width: 650px;
+      background: #131826;
+      border: 2px solid #364463;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: var(--shadow-elevation);
+    }
+    .event-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+      margin-bottom: 15px;
+    }
+    .event-lore {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+      margin-bottom: 25px;
+      min-height: 90px;
+    }
+    .event-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .event-btn {
+      background: #1e2638;
+      border: 1px solid #3e4f75;
+      color: white;
+      padding: 14px 18px;
+      border-radius: 8px;
+      text-align: left;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .event-btn:hover {
+      background: #2a3650;
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    /* GAME OVER & VICTORY SCREENS */
+    #gameover-screen, #victory-screen {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: rgba(8,10,16,0.95);
+    }
+    .result-title {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+    }
+    .result-victory {
+      color: #f1c40f;
+      text-shadow: 0 0 30px rgba(241,196,15,0.6);
+    }
+    .result-defeat {
+      color: #e74c3c;
+      text-shadow: 0 0 30px rgba(231,76,60,0.6);
+    }
+    .result-stats {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      line-height: 1.8;
+    }
+
+    /* MODAL POPUPS (Card Choice, Deck Viewer, Tooltip) */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.85);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: #131826;
+      border: 2px solid #3a4869;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 900px;
+      max-height: 85vh;
+      width: 90%;
+      overflow-y: auto;
+      box-shadow: var(--shadow-elevation);
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #2b3650;
+      padding-bottom: 12px;
+    }
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+    }
+    .btn-close-modal {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.6rem;
+      cursor: pointer;
+    }
+    .btn-close-modal:hover { color: #fff; }
+    .cards-grid-modal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      padding: 10px 0;
+    }
+
+    /* Tooltip */
+    #global-tooltip {
+      position: fixed;
+      background: #0d121c;
+      border: 1px solid var(--accent-gold);
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      max-width: 250px;
+      pointer-events: none;
+      z-index: 9999;
+      display: none;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+      line-height: 1.4;
+    }
+
+    /* Screen Shake Animation */
+    .screen-shake {
+      animation: screen-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+    @keyframes screen-shake {
+      10%, 90% { transform: translate3d(-4px, -2px, 0); }
+      20%, 80% { transform: translate3d(6px, 3px, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 4px, 0); }
+      40%, 60% { transform: translate3d(5px, -3px, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Stats Bar -->
+  <header id="top-bar">
+    <div class="top-section">
+      <div class="stat-badge ascension" id="bar-ascension">승천 0</div>
+      <div class="stat-badge floor" id="bar-floor">층수: 1 / 15</div>
+      <div class="stat-badge hp">
+        <span>HP</span>
+        <div class="hp-bar-container">
+          <div class="hp-bar-fill" id="bar-hp-fill"></div>
+        </div>
+        <span id="bar-hp-text">80 / 80</span>
+      </div>
+      <div class="stat-badge gold">
+        <span>💰</span>
+        <span id="bar-gold-text">99 G</span>
+      </div>
+    </div>
+
+    <!-- Relics list -->
+    <div class="top-section">
+      <div class="relics-container" id="bar-relics">
+        <!-- Injected Relic Icons -->
+      </div>
+    </div>
+
+    <!-- Utility Buttons -->
+    <div class="top-section">
+      <button class="btn-top" id="btn-sound-toggle">🔊 소리 켬</button>
+      <button class="btn-top" id="btn-view-deck">🎴 덱 보기 (<span id="top-deck-count">10</span>)</button>
+      <button class="btn-top" id="btn-abandon-run">⚙️ 포기 / 메뉴</button>
+    </div>
+  </header>
+
+  <!-- Main View Screens Container -->
+  <main id="main-container">
+
+    <!-- 1. TITLE / MAIN MENU SCREEN -->
+    <div class="view-screen active" id="title-screen">
+      <div class="title-banner">
+        <h1>IRON ASCENSION</h1>
+        <p>철의 첨탑을 오르는 다크 판타지 덱빌딩 로그라이크</p>
+      </div>
+      <div class="menu-options">
+        <button class="btn-menu" id="btn-continue-game" style="display: none; border-color: #2ecc71; color: #2ecc71;">계속하기</button>
+        <button class="btn-menu" id="btn-new-game">새로운 원정</button>
+        
+        <div class="ascension-selector">
+          <span style="font-size:0.9rem; font-weight:700; color:#da77f2;">난이도 (승천):</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button id="btn-asc-prev">-</button>
+            <span id="label-ascension" style="font-weight:900; font-size:1.1rem; width:25px; text-align:center;">0</span>
+            <button id="btn-asc-next">+</button>
+          </div>
+        </div>
+
+        <button class="btn-menu" id="btn-guide">게임 가이드 & 아키타입</button>
+      </div>
+    </div>
+
+    <!-- 2. MAP SCREEN (15 FLOORS) -->
+    <div class="view-screen" id="map-screen">
+      <div class="map-header">
+        <h2 style="font-size: 1.2rem; color: var(--accent-gold); font-weight:800;">침묵의 탑 노드 지도</h2>
+        <div class="map-legend">
+          <div class="legend-item"><span>⚔️</span> 일반 몬스터</div>
+          <div class="legend-item"><span>👹</span> 엘리트</div>
+          <div class="legend-item"><span>⛺</span> 휴식처</div>
+          <div class="legend-item"><span>💰</span> 상점</div>
+          <div class="legend-item"><span>❓</span> 미지의 조우</div>
+          <div class="legend-item"><span>💀</span> 보스룸</div>
+        </div>
+      </div>
+      <div class="map-scroll-area" id="map-scroll-area">
+        <div class="map-canvas-container" id="map-container">
+          <svg id="map-svg"></svg>
+          <div id="map-rows-wrapper">
+            <!-- 15 Floors Injected Here via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. COMBAT SCREEN -->
+    <div class="view-screen" id="combat-screen">
+      <!-- Floating Combat Text Layer -->
+      <div class="fct-layer" id="fct-layer"></div>
+
+      <!-- Combat Arena -->
+      <div class="combat-arena" id="combat-arena">
+        <!-- Player Entity -->
+        <div class="combat-entity hero-entity" id="hero-entity">
+          <div class="entity-avatar" id="hero-avatar">🛡️</div>
+          <div class="entity-hud">
+            <div class="entity-name">철의 기사</div>
+            <div class="entity-hp-box">
+              <div class="entity-hp-fill" id="hero-hp-fill"></div>
+              <div class="entity-hp-text" id="hero-hp-text">80 / 80</div>
+            </div>
+            <div class="entity-block-badge" id="hero-block" style="display: none;">🛡️ <span>0</span></div>
+            <div class="status-row" id="hero-statuses"></div>
+          </div>
+        </div>
+
+        <!-- Enemy Group -->
+        <div class="enemy-group" id="enemy-group">
+          <!-- Dynamically Injected Monster Entities -->
+        </div>
+      </div>
+
+      <!-- Lower Hand & Energy Controls -->
+      <div class="combat-controls">
+        <!-- Left Side: Energy & Draw Pile -->
+        <div class="combat-side-ctrl combat-side-left">
+          <div class="energy-orb">
+            <div class="energy-val" id="combat-energy">3</div>
+            <div class="energy-max" id="combat-max-energy">/ 3</div>
+          </div>
+          <div class="pile-badge" id="btn-draw-pile">
+            <span>📚 뽑을 카드:</span>
+            <span id="count-draw-pile" style="color: #64b5f6;">0</span>
+          </div>
+        </div>
+
+        <!-- Center: Hand Cards -->
+        <div class="hand-container" id="hand-container">
+          <!-- Hand Cards Rendered Dynamically -->
+        </div>
+
+        <!-- Right Side: Discard, Exhaust & End Turn -->
+        <div class="combat-side-ctrl combat-side-right">
+          <div class="pile-badge" id="btn-discard-pile">
+            <span>🗑️ 버린 카드:</span>
+            <span id="count-discard-pile" style="color: #ffb74d;">0</span>
+          </div>
+          <div class="pile-badge" id="btn-exhaust-pile">
+            <span>💨 소멸:</span>
+            <span id="count-exhaust-pile" style="color: #ba68c8;">0</span>
+          </div>
+          <button class="btn-end-turn" id="btn-end-turn">턴 종료</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. REWARD SCREEN -->
+    <div class="view-screen" id="reward-screen">
+      <div class="reward-box">
+        <h2 class="reward-title">전투 승리!</h2>
+        <div class="reward-list" id="reward-list">
+          <!-- Injected Loot items: Gold, Card, Relic -->
+        </div>
+        <button class="btn-menu" id="btn-proceed-map" style="width:100%;">지도로 이동</button>
+      </div>
+    </div>
+
+    <!-- 5. REST SITE SCREEN -->
+    <div class="view-screen" id="rest-screen">
+      <div class="campfire-visual">🔥</div>
+      <h2 style="font-size:2rem; color:var(--accent-gold); margin-bottom: 25px; font-weight:800;">고요한 모닥불 휴식처</h2>
+      <div class="rest-options">
+        <div class="rest-card" id="btn-rest-heal">
+          <div class="rest-icon">💤</div>
+          <div class="rest-title">휴식 (치유)</div>
+          <div class="rest-desc" id="rest-heal-desc">체력을 최대치의 30% 회복합니다.</div>
+        </div>
+        <div class="rest-card" id="btn-rest-smith">
+          <div class="rest-icon">🔨</div>
+          <div class="rest-title">제련 (강화)</div>
+          <div class="rest-desc">덱의 카드 1장을 영구히 (+)로 강화합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. SHOP SCREEN -->
+    <div class="view-screen" id="shop-screen">
+      <div class="shop-header">
+        <div>
+          <h2 style="font-size: 1.8rem; color: var(--accent-gold); font-weight:800;">방랑 상인의 골동품점</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">"탑의 파편으로 단련된 귀중품들을 살펴보게나..."</p>
+        </div>
+        <button class="btn-top" id="btn-leave-shop" style="padding: 10px 20px; font-size:1rem;">상점 떠나기 ➔</button>
+      </div>
+
+      <div class="shop-section-title">판매 중인 카드</div>
+      <div class="shop-cards-grid" id="shop-cards-container"></div>
+
+      <div class="shop-section-title">고대 유물</div>
+      <div class="shop-relics-grid" id="shop-relics-container"></div>
+
+      <div class="shop-section-title">카드 정화 서비스</div>
+      <div class="shop-removal-card" id="btn-shop-remove-card">
+        <div>
+          <div style="font-weight: 800; font-size: 1rem; color: #ff6b6b;">불필요한 카드 1장 영구 제거</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">덱을 압축하여 핵심 카드 순환을 극대화합니다.</div>
+        </div>
+        <div class="shop-price-tag" id="shop-removal-price">💰 75 G</div>
+      </div>
+    </div>
+
+    <!-- 7. EVENT SCREEN -->
+    <div class="view-screen" id="event-screen">
+      <div class="event-dialog">
+        <h2 class="event-title" id="event-title">미지의 조우</h2>
+        <div class="event-lore" id="event-lore">어둠 속에서 무언가가 속삭입니다...</div>
+        <div class="event-choices" id="event-choices">
+          <!-- Dynamic Event Choice Buttons -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. VICTORY & DEFEAT SCREENS -->
+    <div class="view-screen" id="victory-screen">
+      <h1 class="result-title result-victory">첨탑 정복!</h1>
+      <p style="font-size: 1.3rem; margin-bottom: 20px; color:#f0f3f8;">심연의 군주를 쓰러뜨리고 탑의 정상에 도달했습니다.</p>
+      <div class="result-stats" id="victory-stats"></div>
+      <button class="btn-menu" id="btn-victory-restart" style="width:280px;">다음 승천 난이도로 도전</button>
+    </div>
+
+    <div class="view-screen" id="gameover-screen">
+      <h1 class="result-title result-defeat">원정 실패</h1>
+      <p style="font-size: 1.2rem; margin-bottom: 20px; color:#f0f3f8;">당신의 영혼은 첨탑의 망령 중 하나가 되었습니다...</p>
+      <div class="result-stats" id="defeat-stats"></div>
+      <button class="btn-menu" id="btn-defeat-restart" style="width:280px;">새로운 여정 시작</button>
+    </div>
+
+  </main>
+
+  <!-- MODALS -->
+
+  <!-- Deck / Pile Viewer Modal -->
+  <div class="modal-overlay" id="modal-deck-viewer">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-deck-title">현재 보유 덱</div>
+        <button class="btn-close-modal" id="btn-close-deck-modal">&times;</button>
+      </div>
+      <div class="cards-grid-modal" id="modal-deck-grid"></div>
+    </div>
+  </div>
+
+  <!-- Card Selection Modal (For Smith, Purge, Rewards) -->
+  <div class="modal-overlay" id="modal-card-select">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-select-title">카드를 선택하세요</div>
+        <button class="btn-close-modal" id="btn-close-select-modal">&times;</button>
+      </div>
+      <div class="cards-grid-modal" id="modal-select-grid"></div>
+    </div>
+  </div>
+
+  <!-- Global Tooltip -->
+  <div id="global-tooltip"></div>
+
+  <!-- AUDIO & GAME SCRIPT -->
+  <script>
+  /* =========================================================================
+     1. WEB AUDIO API SYNTHESIZER (ZERO EXTERNAL SOUND ASSETS)
+     ========================================================================= */
+  class SoundEngine {
+    constructor() {
+      this.ctx = null;
+      this.isMuted = false;
+    }
+
+    init() {
+      try {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return false;
+          this.ctx = new AudioContextClass();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        return !!this.ctx;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    toggleMute() {
+      this.isMuted = !this.isMuted;
+      return !this.isMuted;
+    }
+
+    playCardDraw() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      const bufferSize = this.ctx.sampleRate * 0.12;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.frequency.exponentialRampToValueAtTime(3200, now + 0.1);
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+      noise.start(now);
+    }
+
+    playStrike() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.18);
+      gain.gain.setValueAtTime(0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    }
+
+    playHeavyHit() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+      gain.gain.setValueAtTime(0.6, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    }
+
+    playBlock() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1100, now);
+      osc.frequency.exponentialRampToValueAtTime(550, now + 0.25);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.28);
+    }
+
+    playBuff() {
+      if (this.isMuted || !this.init()) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+      notes.forEach((freq, idx) => {
+        const now = this.ctx.currentTime + idx * 0.06;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      });
+    }
+
+    playDebuff() {
+      if (this.isMuted || !this.init()) return;
+      const notes = [466.16, 415.30, 369.99];
+      notes.forEach((freq, idx) => {
+        const now = this.ctx.currentTime + idx * 0.08;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+      });
+    }
+
+    playShopBuy() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      [987.77, 1318.51].forEach((freq, idx) => {
+        const t = now + idx * 0.08;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.12, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(t);
+        osc.stop(t + 0.15);
+      });
+    }
+
+    playVictory() {
+      if (this.isMuted || !this.init()) return;
+      const chord = [523.25, 659.25, 783.99, 1046.50];
+      chord.forEach((f, i) => {
+        const now = this.ctx.currentTime + i * 0.12;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.8);
+      });
+    }
+
+    playDefeat() {
+      if (this.isMuted || !this.init()) return;
+      const notes = [329.63, 311.13, 293.66, 277.18];
+      notes.forEach((f, i) => {
+        const now = this.ctx.currentTime + i * 0.22;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(f, now);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      });
+    }
+
+    playClick() {
+      if (this.isMuted || !this.init()) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.04);
+    }
+  }
+
+  const sound = new SoundEngine();
+
+  /* =========================================================================
+     2. CARD DATABASE (36 CARDS, FULL ARCHETYPES & UPGRADES)
+     ========================================================================= */
+  const CARDS_DB = {
+    // --- BASIC ---
+    strike: {
+      id: 'strike', name: '타격', cost: 1, type: 'attack', rarity: 'basic', icon: '⚔️',
+      desc: '적에게 6의 피해를 줍니다.',
+      upgradedDesc: '적에게 9의 피해를 줍니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 9 : 6);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playStrike();
+      }
+    },
+    defend: {
+      id: 'defend', name: '수비', cost: 1, type: 'skill', rarity: 'basic', icon: '🛡️',
+      desc: '5의 방어도를 얻습니다.',
+      upgradedDesc: '8의 방어도를 얻습니다.',
+      play(game) {
+        const blk = game.calcPlayerBlock(this.upgraded ? 8 : 5);
+        game.gainPlayerBlock(blk);
+        sound.playBlock();
+      }
+    },
+    bash: {
+      id: 'bash', name: '강타', cost: 2, type: 'attack', rarity: 'basic', icon: '💥',
+      desc: '8의 피해를 주고 취약 2를 부여합니다.',
+      upgradedDesc: '10의 피해를 주고 취약 3을 부여합니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 10 : 8);
+        game.dealDamageToEnemy(target, dmg);
+        game.applyEnemyStatus(target, 'vulnerable', this.upgraded ? 3 : 2);
+        sound.playHeavyHit();
+      }
+    },
+
+    // --- STRENGTH & MULTI-HIT ARCHETYPE ---
+    heavy_blade: {
+      id: 'heavy_blade', name: '대검', cost: 2, type: 'attack', rarity: 'common', icon: '🗡️',
+      desc: '14의 피해를 줍니다. 힘의 효과를 3배로 받습니다.',
+      upgradedDesc: '18의 피해를 줍니다. 힘의 효과를 5배로 받습니다.',
+      play(game, target) {
+        const mult = this.upgraded ? 5 : 3;
+        const base = this.upgraded ? 18 : 14;
+        const strBonus = (game.player.statuses.strength || 0) * mult;
+        const dmg = game.calcPlayerDamage(base + strBonus, true);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playHeavyHit();
+      }
+    },
+    inflame: {
+      id: 'inflame', name: '발화', cost: 1, type: 'power', rarity: 'uncommon', icon: '🔥',
+      desc: '힘을 2 얻습니다.',
+      upgradedDesc: '힘을 3 얻습니다.',
+      play(game) {
+        game.applyPlayerStatus('strength', this.upgraded ? 3 : 2);
+        sound.playBuff();
+      }
+    },
+    flex: {
+      id: 'flex', name: '몸풀기', cost: 0, type: 'skill', rarity: 'common', icon: '💪',
+      desc: '이번 턴 동안 힘을 2 얻습니다.',
+      upgradedDesc: '이번 턴 동안 힘을 4 얻습니다.',
+      play(game) {
+        const val = this.upgraded ? 4 : 2;
+        game.applyPlayerStatus('strength', val);
+        game.player.tempStrength = (game.player.tempStrength || 0) + val;
+        sound.playBuff();
+      }
+    },
+    twin_strike: {
+      id: 'twin_strike', name: '연속 타격', cost: 1, type: 'attack', rarity: 'common', icon: '⚔️',
+      desc: '5의 피해를 2번 줍니다.',
+      upgradedDesc: '7의 피해를 2번 줍니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 7 : 5);
+        game.dealDamageToEnemy(target, dmg);
+        setTimeout(() => {
+          if (target.hp > 0) game.dealDamageToEnemy(target, dmg);
+        }, 150);
+        sound.playStrike();
+      }
+    },
+    sword_boomerang: {
+      id: 'sword_boomerang', name: '검무 부메랑', cost: 1, type: 'attack', rarity: 'common', icon: '🪃',
+      desc: '무작위 적에게 3의 피해를 3번 줍니다.',
+      upgradedDesc: '무작위 적에게 4의 피해를 4번 줍니다.',
+      play(game) {
+        const hits = this.upgraded ? 4 : 3;
+        const base = this.upgraded ? 4 : 3;
+        for (let i = 0; i < hits; i++) {
+          setTimeout(() => {
+            const alive = game.enemies.filter(e => e.hp > 0);
+            if (alive.length > 0) {
+              const tgt = alive[Math.floor(Math.random() * alive.length)];
+              const dmg = game.calcPlayerDamage(base);
+              game.dealDamageToEnemy(tgt, dmg);
+              sound.playStrike();
+            }
+          }, i * 140);
+        }
+      }
+    },
+    demon_form: {
+      id: 'demon_form', name: '악마화', cost: 3, type: 'power', rarity: 'rare', icon: '😈',
+      desc: '매 턴 시작 시 힘을 2 얻습니다.',
+      upgradedDesc: '매 턴 시작 시 힘을 3 얻습니다.',
+      play(game) {
+        game.applyPlayerStatus('demon_form', this.upgraded ? 3 : 2);
+        sound.playBuff();
+      }
+    },
+    limit_break: {
+      id: 'limit_break', name: '한계 돌파', cost: 1, type: 'skill', rarity: 'rare', icon: '⚡',
+      desc: '현재 힘을 2배로 증가시킵니다. 소멸.',
+      upgradedDesc: '현재 힘을 2배로 증가시킵니다.',
+      exhaust: true,
+      play(game) {
+        const cur = game.player.statuses.strength || 0;
+        if (cur > 0) {
+          game.applyPlayerStatus('strength', cur);
+        }
+        sound.playBuff();
+      }
+    },
+    reaper: {
+      id: 'reaper', name: '사신', cost: 2, type: 'attack', rarity: 'rare', icon: '💀',
+      desc: '모든 적에게 4의 피해를 주고, 차단되지 않은 피해만큼 체력을 회복합니다.',
+      upgradedDesc: '모든 적에게 5의 피해를 주고, 차단되지 않은 피해만큼 체력을 회복합니다.',
+      exhaust: true,
+      play(game) {
+        const base = this.upgraded ? 5 : 4;
+        let totalUnblocked = 0;
+        game.enemies.forEach(e => {
+          if (e.hp > 0) {
+            const dmg = game.calcPlayerDamage(base);
+            const actual = game.dealDamageToEnemy(e, dmg);
+            totalUnblocked += actual;
+          }
+        });
+        if (totalUnblocked > 0) {
+          game.healPlayer(totalUnblocked);
+        }
+        sound.playHeavyHit();
+      }
+    },
+
+    // --- TURTLE & BLOCK STACKING ARCHETYPE ---
+    body_slam: {
+      id: 'body_slam', name: '몸통 박치기', cost: 1, type: 'attack', rarity: 'common', icon: '🛡️',
+      desc: '현재 방어도만큼의 피해를 줍니다.',
+      upgradedDesc: '0코스트. 현재 방어도만큼의 피해를 줍니다.',
+      getCost(upgraded) { return upgraded ? 0 : 1; },
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(game.player.block, true);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playHeavyHit();
+      }
+    },
+    iron_wave: {
+      id: 'iron_wave', name: '철벽의 파동', cost: 1, type: 'attack', rarity: 'common', icon: '🌊',
+      desc: '5의 방어도를 얻고, 5의 피해를 줍니다.',
+      upgradedDesc: '7의 방어도를 얻고, 7의 피해를 줍니다.',
+      play(game, target) {
+        const blk = game.calcPlayerBlock(this.upgraded ? 7 : 5);
+        const dmg = game.calcPlayerDamage(this.upgraded ? 7 : 5);
+        game.gainPlayerBlock(blk);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playBlock();
+      }
+    },
+    shrug_it_off: {
+      id: 'shrug_it_off', name: '흘려보내기', cost: 1, type: 'skill', rarity: 'common', icon: '💨',
+      desc: '8의 방어도를 얻습니다. 카드를 1장 뽑습니다.',
+      upgradedDesc: '11의 방어도를 얻습니다. 카드를 1장 뽑습니다.',
+      play(game) {
+        const blk = game.calcPlayerBlock(this.upgraded ? 11 : 8);
+        game.gainPlayerBlock(blk);
+        game.drawCards(1);
+        sound.playBlock();
+      }
+    },
+    entrench: {
+      id: 'entrench', name: '참호 구축', cost: 2, type: 'skill', rarity: 'uncommon', icon: '🏰',
+      desc: '현재 방어도를 2배로 만듭니다.',
+      upgradedDesc: '1코스트. 현재 방어도를 2배로 만듭니다.',
+      getCost(upgraded) { return upgraded ? 1 : 2; },
+      play(game) {
+        const current = game.player.block;
+        game.gainPlayerBlock(current);
+        sound.playBlock();
+      }
+    },
+    barricade: {
+      id: 'barricade', name: '바리케이드', cost: 3, type: 'power', rarity: 'rare', icon: '🧱',
+      desc: '턴 시작 시 방어도가 초기화되지 않습니다.',
+      upgradedDesc: '2코스트. 턴 시작 시 방어도가 초기화되지 않습니다.',
+      getCost(upgraded) { return upgraded ? 2 : 3; },
+      play(game) {
+        game.applyPlayerStatus('barricade', 1);
+        sound.playBuff();
+      }
+    },
+    impervious: {
+      id: 'impervious', name: '철옹성', cost: 2, type: 'skill', rarity: 'rare', icon: '🛡️',
+      desc: '30의 방어도를 얻습니다. 소멸.',
+      upgradedDesc: '40의 방어도를 얻습니다. 소멸.',
+      exhaust: true,
+      play(game) {
+        const blk = game.calcPlayerBlock(this.upgraded ? 40 : 30);
+        game.gainPlayerBlock(blk);
+        sound.playBlock();
+      }
+    },
+    flame_barrier: {
+      id: 'flame_barrier', name: '화염 장벽', cost: 2, type: 'skill', rarity: 'uncommon', icon: '🔥',
+      desc: '12의 방어도를 얻습니다. 이번 턴 피격 시 적에게 4의 피해를 반사합니다.',
+      upgradedDesc: '16의 방어도를 얻습니다. 이번 턴 피격 시 적에게 6의 피해를 반사합니다.',
+      play(game) {
+        const blk = game.calcPlayerBlock(this.upgraded ? 16 : 12);
+        game.gainPlayerBlock(blk);
+        game.player.thorns = (game.player.thorns || 0) + (this.upgraded ? 6 : 4);
+        sound.playBlock();
+      }
+    },
+
+    // --- POISON & CONTROL ARCHETYPE ---
+    poisoned_blade: {
+      id: 'poisoned_blade', name: '독 묻은 칼날', cost: 1, type: 'attack', rarity: 'common', icon: '🗡️',
+      desc: '5의 피해를 주고, 독 3을 부여합니다.',
+      upgradedDesc: '7의 피해를 주고, 독 5를 부여합니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 7 : 5);
+        game.dealDamageToEnemy(target, dmg);
+        game.applyEnemyStatus(target, 'poison', this.upgraded ? 5 : 3);
+        sound.playStrike();
+      }
+    },
+    deadly_poison: {
+      id: 'deadly_poison', name: '맹독 투척', cost: 1, type: 'skill', rarity: 'common', icon: '🧪',
+      desc: '독 5를 부여합니다.',
+      upgradedDesc: '독 8을 부여합니다.',
+      play(game, target) {
+        game.applyEnemyStatus(target, 'poison', this.upgraded ? 8 : 5);
+        sound.playDebuff();
+      }
+    },
+    toxic_cloud: {
+      id: 'toxic_cloud', name: '독무 분사', cost: 2, type: 'skill', rarity: 'uncommon', icon: '☁️',
+      desc: '모든 적에게 독 5와 약화 2를 부여합니다.',
+      upgradedDesc: '모든 적에게 독 7과 약화 3을 부여합니다.',
+      play(game) {
+        game.enemies.forEach(e => {
+          if (e.hp > 0) {
+            game.applyEnemyStatus(e, 'poison', this.upgraded ? 7 : 5);
+            game.applyEnemyStatus(e, 'weak', this.upgraded ? 3 : 2);
+          }
+        });
+        sound.playDebuff();
+      }
+    },
+    catalyst: {
+      id: 'catalyst', name: '촉매', cost: 1, type: 'skill', rarity: 'uncommon', icon: '⚗️',
+      desc: '적의 독 수치를 2배로 증폭합니다. 소멸.',
+      upgradedDesc: '적의 독 수치를 3배로 증폭합니다. 소멸.',
+      exhaust: true,
+      play(game, target) {
+        const cur = target.statuses.poison || 0;
+        if (cur > 0) {
+          const mult = this.upgraded ? 3 : 2;
+          target.statuses.poison = cur * mult;
+        }
+        sound.playDebuff();
+      }
+    },
+    noxious_fumes: {
+      id: 'noxious_fumes', name: '유독 가스', cost: 1, type: 'power', rarity: 'uncommon', icon: '💨',
+      desc: '매 턴 시작 시 모든 적에게 독 2를 부여합니다.',
+      upgradedDesc: '매 턴 시작 시 모든 적에게 독 3을 부여합니다.',
+      play(game) {
+        game.applyPlayerStatus('noxious_fumes', this.upgraded ? 3 : 2);
+        sound.playBuff();
+      }
+    },
+    crippling_blow: {
+      id: 'crippling_blow', name: '무력화 타격', cost: 1, type: 'attack', rarity: 'common', icon: '🩸',
+      desc: '7의 피해를 주고 약화 2를 부여합니다.',
+      upgradedDesc: '10의 피해를 주고 약화 3을 부여합니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 10 : 7);
+        game.dealDamageToEnemy(target, dmg);
+        game.applyEnemyStatus(target, 'weak', this.upgraded ? 3 : 2);
+        sound.playStrike();
+      }
+    },
+
+    // --- DRAW, ENERGY & CYCLING ARCHETYPE ---
+    pommel_strike: {
+      id: 'pommel_strike', name: '자루 치기', cost: 1, type: 'attack', rarity: 'common', icon: '🔨',
+      desc: '9의 피해를 줍니다. 카드를 1장 뽑습니다.',
+      upgradedDesc: '12의 피해를 줍니다. 카드를 2장 뽑습니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 12 : 9);
+        game.dealDamageToEnemy(target, dmg);
+        game.drawCards(this.upgraded ? 2 : 1);
+        sound.playStrike();
+      }
+    },
+    battle_trance: {
+      id: 'battle_trance', name: '전투 최면', cost: 0, type: 'skill', rarity: 'uncommon', icon: '🌀',
+      desc: '카드를 3장 뽑습니다. 이번 턴 더 이상 카드를 뽑을 수 없습니다.',
+      upgradedDesc: '카드를 4장 뽑습니다. 이번 턴 더 이상 카드를 뽑을 수 없습니다.',
+      play(game) {
+        game.drawCards(this.upgraded ? 4 : 3);
+        game.player.noDraw = true;
+        sound.playBuff();
+      }
+    },
+    offering: {
+      id: 'offering', name: '제물', cost: 0, type: 'skill', rarity: 'rare', icon: '🩸',
+      desc: '체력을 4 잃고 에너지 2를 얻으며, 카드를 3장 뽑습니다. 소멸.',
+      upgradedDesc: '체력을 4 잃고 에너지 2를 얻으며, 카드를 5장 뽑습니다. 소멸.',
+      exhaust: true,
+      play(game) {
+        game.damagePlayerDirect(4);
+        game.player.energy += 2;
+        game.drawCards(this.upgraded ? 5 : 3);
+        sound.playHeavyHit();
+      }
+    },
+    bloodletting: {
+      id: 'bloodletting', name: '방혈', cost: 0, type: 'skill', rarity: 'uncommon', icon: '💉',
+      desc: '체력을 3 잃고 에너지 2를 얻습니다.',
+      upgradedDesc: '체력을 3 잃고 에너지 3을 얻습니다.',
+      play(game) {
+        game.damagePlayerDirect(3);
+        game.player.energy += this.upgraded ? 3 : 2;
+        sound.playHeavyHit();
+      }
+    },
+    seeing_red: {
+      id: 'seeing_red', name: '분노 폭발', cost: 1, type: 'skill', rarity: 'uncommon', icon: '😡',
+      desc: '에너지 2를 얻습니다. 소멸.',
+      upgradedDesc: '0코스트. 에너지 2를 얻습니다. 소멸.',
+      exhaust: true,
+      getCost(upgraded) { return upgraded ? 0 : 1; },
+      play(game) {
+        game.player.energy += 2;
+        sound.playBuff();
+      }
+    },
+    whirlwind: {
+      id: 'whirlwind', name: '소용돌이', cost: 'X', type: 'attack', rarity: 'uncommon', icon: '🌪️',
+      desc: '모든 에너지를 소모하여 모든 적에게 5의 피해를 X번 줍니다.',
+      upgradedDesc: '모든 에너지를 소모하여 모든 적에게 8의 피해를 X번 줍니다.',
+      play(game) {
+        const x = game.player.energy;
+        game.player.energy = 0;
+        const base = this.upgraded ? 8 : 5;
+        for (let i = 0; i < x; i++) {
+          setTimeout(() => {
+            game.enemies.forEach(e => {
+              if (e.hp > 0) {
+                const dmg = game.calcPlayerDamage(base);
+                game.dealDamageToEnemy(e, dmg);
+              }
+            });
+            sound.playStrike();
+          }, i * 160);
+        }
+      }
+    },
+    shockwave: {
+      id: 'shockwave', name: '충격파', cost: 2, type: 'skill', rarity: 'uncommon', icon: '⚡',
+      desc: '모든 적에게 취약 3과 약화 3을 부여합니다. 소멸.',
+      upgradedDesc: '모든 적에게 취약 5와 약화 5를 부여합니다. 소멸.',
+      exhaust: true,
+      play(game) {
+        game.enemies.forEach(e => {
+          if (e.hp > 0) {
+            game.applyEnemyStatus(e, 'vulnerable', this.upgraded ? 5 : 3);
+            game.applyEnemyStatus(e, 'weak', this.upgraded ? 5 : 3);
+          }
+        });
+        sound.playDebuff();
+      }
+    },
+    carnage: {
+      id: 'carnage', name: '대학살', cost: 2, type: 'attack', rarity: 'uncommon', icon: '🪓',
+      desc: '20의 피해를 줍니다. 휘발성(턴 종료 시 패에 남으면 소멸).',
+      upgradedDesc: '28의 피해를 줍니다. 휘발성(턴 종료 시 패에 남으면 소멸).',
+      ethereal: true,
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 28 : 20);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playHeavyHit();
+      }
+    },
+    feed: {
+      id: 'feed', name: '포식', cost: 1, type: 'attack', rarity: 'rare', icon: '🍖',
+      desc: '10의 피해를 줍니다. 이 공격으로 처치 시 최대 HP가 3 증가합니다. 소멸.',
+      upgradedDesc: '14의 피해를 줍니다. 이 공격으로 처치 시 최대 HP가 4 증가합니다. 소멸.',
+      exhaust: true,
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 14 : 10);
+        const fatal = target.hp <= dmg;
+        game.dealDamageToEnemy(target, dmg);
+        if (fatal) {
+          const gain = this.upgraded ? 4 : 3;
+          game.player.maxHp += gain;
+          game.healPlayer(gain);
+          game.showFCT(`최대 HP +${gain}!`, 'buff', game.getHeroCenter());
+        }
+        sound.playHeavyHit();
+      }
+    },
+    bludgeon: {
+      id: 'bludgeon', name: '몽둥이질', cost: 3, type: 'attack', rarity: 'rare', icon: '🔨',
+      desc: '적에게 32의 강력한 피해를 줍니다.',
+      upgradedDesc: '적에게 42의 강력한 피해를 줍니다.',
+      play(game, target) {
+        const dmg = game.calcPlayerDamage(this.upgraded ? 42 : 32);
+        game.dealDamageToEnemy(target, dmg);
+        sound.playHeavyHit();
+      }
+    },
+    cleave: {
+      id: 'cleave', name: '휩쓸기', cost: 1, type: 'attack', rarity: 'common', icon: '🪓',
+      desc: '모든 적에게 8의 피해를 줍니다.',
+      upgradedDesc: '모든 적에게 11의 피해를 줍니다.',
+      play(game) {
+        const base = this.upgraded ? 11 : 8;
+        game.enemies.forEach(e => {
+          if (e.hp > 0) {
+            const dmg = game.calcPlayerDamage(base);
+            game.dealDamageToEnemy(e, dmg);
+          }
+        });
+        sound.playStrike();
+      }
+    },
+    disarm: {
+      id: 'disarm', name: '무장 해제', cost: 1, type: 'skill', rarity: 'uncommon', icon: '🛡️',
+      desc: '적의 힘을 영구히 2 감소시킵니다. 소멸.',
+      upgradedDesc: '적의 힘을 영구히 3 감소시킵니다. 소멸.',
+      exhaust: true,
+      play(game, target) {
+        const val = this.upgraded ? 3 : 2;
+        target.statuses.strength = (target.statuses.strength || 0) - val;
+        sound.playDebuff();
+      }
+    }
+  };
+
+  /* =========================================================================
+     3. RELICS DATABASE (14 UNIQUE RELICS)
+     ========================================================================= */
+  const RELICS_DB = {
+    burning_blood: {
+      id: 'burning_blood', name: '불타는 혈액', icon: '🩸',
+      desc: '전투 종료 시 체력을 6 회복합니다.',
+      onCombatEnd(game) {
+        game.healPlayer(6);
+        game.showFCT('+6 HP (혈액)', 'buff', game.getHeroCenter());
+      }
+    },
+    vajra: {
+      id: 'vajra', name: '금강저', icon: '⚡',
+      desc: '전투 시작 시 힘을 1 얻습니다.',
+      onCombatStart(game) {
+        game.applyPlayerStatus('strength', 1);
+      }
+    },
+    smooth_stone: {
+      id: 'smooth_stone', name: '매끄러운 돌', icon: '🪨',
+      desc: '전투 시작 시 민첩을 1 얻습니다.',
+      onCombatStart(game) {
+        game.applyPlayerStatus('dexterity', 1);
+      }
+    },
+    anchor: {
+      id: 'anchor', name: '닻', icon: '닻',
+      desc: '전투 시작 시 방어도 10을 얻습니다.',
+      onCombatStart(game) {
+        game.gainPlayerBlock(10);
+      }
+    },
+    lantern: {
+      id: 'lantern', name: '손전등', icon: '🏮',
+      desc: '전투의 첫 번째 턴에 에너지를 1 추가로 얻습니다.',
+      onCombatStart(game) {
+        game.player.energy += 1;
+        game.showFCT('+1 에너지 (랜턴)', 'buff', game.getHeroCenter());
+      }
+    },
+    orichalcum: {
+      id: 'orichalcum', name: '오리하르콘', icon: '🛡️',
+      desc: '턴 종료 시 방어도가 0이라면 방어도 6을 획득합니다.',
+      onTurnEnd(game) {
+        if (game.player.block === 0) {
+          game.gainPlayerBlock(6);
+          game.showFCT('+6 방어도 (오리하르콘)', 'block', game.getHeroCenter());
+        }
+      }
+    },
+    meat_on_bone: {
+      id: 'meat_on_bone', name: '뼈에 붙은 고기', icon: '🍖',
+      desc: '전투 종료 시 체력이 50% 이하라면 12의 체력을 추가로 회복합니다.',
+      onCombatEnd(game) {
+        if (game.player.hp <= game.player.maxHp * 0.5) {
+          game.healPlayer(12);
+          game.showFCT('+12 HP (고기)', 'buff', game.getHeroCenter());
+        }
+      }
+    },
+    kunai: {
+      id: 'kunai', name: '쿠나이', icon: '🗡️',
+      desc: '한 턴에 공격 카드를 3장 사용할 때마다 민첩 1을 얻습니다.',
+      onCardPlayed(game, card) {
+        if (card.type === 'attack') {
+          game.state.attackCount = (game.state.attackCount || 0) + 1;
+          if (game.state.attackCount % 3 === 0) {
+            game.applyPlayerStatus('dexterity', 1);
+            game.showFCT('+1 민첩 (쿠나이)', 'buff', game.getHeroCenter());
+          }
+        }
+      }
+    },
+    shuriken: {
+      id: 'shuriken', name: '수리검', icon: '⭐',
+      desc: '한 턴에 공격 카드를 3장 사용할 때마다 힘 1을 얻습니다.',
+      onCardPlayed(game, card) {
+        if (card.type === 'attack') {
+          game.state.shurikenCount = (game.state.shurikenCount || 0) + 1;
+          if (game.state.shurikenCount % 3 === 0) {
+            game.applyPlayerStatus('strength', 1);
+            game.showFCT('+1 힘 (수리검)', 'buff', game.getHeroCenter());
+          }
+        }
+      }
+    },
+    happy_flower: {
+      id: 'happy_flower', name: '행복한 꽃', icon: '🌸',
+      desc: '매 3턴마다 에너지를 1 추가로 획득합니다.',
+      onTurnStart(game) {
+        game.state.flowerTurns = (game.state.flowerTurns || 0) + 1;
+        if (game.state.flowerTurns % 3 === 0) {
+          game.player.energy += 1;
+          game.showFCT('+1 에너지 (행복한 꽃)', 'buff', game.getHeroCenter());
+        }
+      }
+    },
+    centennial_puzzle: {
+      id: 'centennial_puzzle', name: '백년 퍼즐', icon: '🧩',
+      desc: '전투 중 처음으로 체력 피해를 입으면 카드를 3장 뽑습니다.',
+      onDamageTaken(game) {
+        if (!game.state.puzzleTriggered) {
+          game.state.puzzleTriggered = true;
+          game.drawCards(3);
+          game.showFCT('+3 드로우 (퍼즐)', 'buff', game.getHeroCenter());
+        }
+      }
+    },
+    lees_waffle: {
+      id: 'lees_waffle', name: '리씨의 와플', icon: '🧇',
+      desc: '획득 즉시 최대 HP가 10 증가하고 체력을 모두 회복합니다.',
+      onObtain(game) {
+        game.player.maxHp += 10;
+        game.player.hp = game.player.maxHp;
+        game.updateTopBar();
+      }
+    },
+    golden_idol: {
+      id: 'golden_idol', name: '황금 우상', icon: '👑',
+      desc: '전투 승리 시 획득하는 골드가 25% 증가합니다.',
+      modifyGold(gold) {
+        return Math.floor(gold * 1.25);
+      }
+    },
+    black_star: {
+      id: 'black_star', name: '검은 별', icon: '✴️',
+      desc: '엘리트 몬스터 처치 시 유물을 2개 드롭합니다.'
+    }
+  };
+
+  /* =========================================================================
+     4. MONSTER & BOSS ENCOUNTER DEFINITIONS
+     ========================================================================= */
+  const ENEMY_TEMPLATES = {
+    // Normal Monsters
+    cultist: {
+      name: '광신도', icon: '🦅', maxHp: 48,
+      ai(enemy, turn) {
+        if (turn === 1) {
+          return { type: 'buff', val: 2, icon: '🔥', desc: '의식: 매 턴 힘 +2 획득' };
+        } else {
+          return { type: 'attack', val: 6, icon: '⚔️', desc: '찌르기' };
+        }
+      },
+      execute(game, enemy, intent) {
+        if (intent.type === 'buff') {
+          enemy.ritual = 2;
+          enemy.statuses.strength = (enemy.statuses.strength || 0) + 2;
+        } else {
+          game.dealDamageToPlayer(enemy, intent.val);
+          if (enemy.ritual) {
+            enemy.statuses.strength = (enemy.statuses.strength || 0) + enemy.ritual;
+          }
+        }
+      }
+    },
+    jaw_worm: {
+      name: '턱 벌레', icon: '🐛', maxHp: 42,
+      ai(enemy, turn) {
+        const cycle = turn % 3;
+        if (cycle === 1) return { type: 'attack', val: 11, icon: '⚔️', desc: '물어뜯기 (11)' };
+        if (cycle === 2) return { type: 'buff_shield', val: 6, icon: '🛡️', desc: '포효: 방어도 6 및 힘 +3' };
+        return { type: 'attack_shield', val: 7, block: 5, icon: '⚔️🛡️', desc: '몸통치기 (7) + 방어 (5)' };
+      },
+      execute(game, enemy, intent) {
+        if (intent.type === 'attack') {
+          game.dealDamageToPlayer(enemy, intent.val);
+        } else if (intent.type === 'buff_shield') {
+          enemy.block += 6;
+          enemy.statuses.strength = (enemy.statuses.strength || 0) + 3;
+        } else {
+          game.dealDamageToPlayer(enemy, intent.val);
+          enemy.block += 5;
+        }
+      }
+    },
+    acid_slime: {
+      name: '산성 슬라임', icon: '🧪', maxHp: 32,
+      ai(enemy, turn) {
+        if (turn % 2 === 1) return { type: 'attack_debuff', val: 8, icon: '⚔️🧪', desc: '부식 침 (8) + 약화 1' };
+        return { type: 'debuff', val: 3, icon: '🧪', desc: '독 분사: 독 3 부여' };
+      },
+      execute(game, enemy, intent) {
+        if (intent.type === 'attack_debuff') {
+          game.dealDamageToPlayer(enemy, 8);
+          game.applyPlayerStatus('weak', 1);
+        } else {
+          game.applyPlayerStatus('poison', 3);
+        }
+      }
+    },
+    red_slaver: {
+      name: '붉은 노예상', icon: '👺', maxHp: 50,
+      ai(enemy, turn) {
+        if (turn === 1) return { type: 'attack_debuff', val: 9, icon: '⚔️🩸', desc: '긁기 (9) + 취약 2' };
+        if (turn % 2 === 0) return { type: 'attack', val: 13, icon: '⚔️', desc: '맹렬한 찌르기 (13)' };
+        return { type: 'attack', val: 9, icon: '⚔️', desc: '찌르기 (9)' };
+      },
+      execute(game, enemy, intent) {
+        game.dealDamageToPlayer(enemy, intent.val);
+        if (intent.type === 'attack_debuff') {
+          game.applyPlayerStatus('vulnerable', 2);
+        }
+      }
+    },
+
+    // Elite Monsters
+    gremlin_nob: {
+      name: '그렘린 노브', icon: '👹', maxHp: 85, isElite: true,
+      ai(enemy, turn) {
+        if (turn === 1) return { type: 'buff', val: 0, icon: '😡', desc: '격노: 스킬 카드 사용 시 힘 +2' };
+        if (turn === 2) return { type: 'attack_debuff', val: 8, icon: '⚔️💥', desc: '박치기 (8) + 취약 2' };
+        return { type: 'attack', val: 16, icon: '⚔️', desc: '돌진 강타 (16)' };
+      },
+      execute(game, enemy, intent) {
+        if (intent.type === 'buff') {
+          enemy.statuses.enrage = 2;
+        } else if (intent.type === 'attack_debuff') {
+          game.dealDamageToPlayer(enemy, 8);
+          game.applyPlayerStatus('vulnerable', 2);
+        } else {
+          game.dealDamageToPlayer(enemy, 16);
+        }
+      }
+    },
+    lagavulin: {
+      name: '라가불린', icon: '🗿', maxHp: 110, isElite: true,
+      ai(enemy, turn) {
+        if (enemy.isAsleep) return { type: 'sleep', val: 0, icon: '💤', desc: '수면 중 (방어막 유지)' };
+        if (turn % 3 === 1) return { type: 'debuff', val: 0, icon: '🌀', desc: '영혼 흡수: 힘 -1, 민첩 -1' };
+        return { type: 'attack', val: 18, icon: '⚔️', desc: '격파 (18)' };
+      },
+      execute(game, enemy, intent) {
+        if (enemy.isAsleep) return;
+        if (intent.type === 'debuff') {
+          game.applyPlayerStatus('strength', -1);
+          game.applyPlayerStatus('dexterity', -1);
+        } else {
+          game.dealDamageToPlayer(enemy, 18);
+        }
+      }
+    },
+
+    // Floor 15 Summit Boss
+    void_sovereign: {
+      name: '공허의 군주', icon: '🐲', maxHp: 240, isBoss: true,
+      ai(enemy, turn) {
+        const cycle = turn % 4;
+        if (cycle === 1) return { type: 'buff_shield', val: 20, icon: '🛡️🔥', desc: '공허 공명: 방어도 20 & 힘 +2' };
+        if (cycle === 2) return { type: 'multi_attack', val: 6, hits: 3, icon: '⚔️⚔️', desc: '공허 발톱 (6 x 3)' };
+        if (cycle === 3) return { type: 'debuff', val: 0, icon: '💀', desc: '심연의 응시: 취약 2, 약화 2, 독 4' };
+        return { type: 'attack', val: 28, icon: '💥', desc: '대파멸 (28)' };
+      },
+      execute(game, enemy, intent) {
+        if (intent.type === 'buff_shield') {
+          enemy.block += 20;
+          enemy.statuses.strength = (enemy.statuses.strength || 0) + 2;
+        } else if (intent.type === 'multi_attack') {
+          for (let i = 0; i < intent.hits; i++) {
+            setTimeout(() => game.dealDamageToPlayer(enemy, intent.val), i * 180);
+          }
+        } else if (intent.type === 'debuff') {
+          game.applyPlayerStatus('vulnerable', 2);
+          game.applyPlayerStatus('weak', 2);
+          game.applyPlayerStatus('poison', 4);
+        } else {
+          game.dealDamageToPlayer(enemy, intent.val);
+        }
+      }
+    }
+  };
+
+  /* =========================================================================
+     5. RANDOM EVENTS POOL (DARK FANTASY STORY CHOICES)
+     ========================================================================= */
+  const EVENTS_DB = [
+    {
+      title: '피의 제단',
+      lore: '어두운 돌무더기 사이에 붉은 피가 넘쳐흐르는 고대 제단이 놓여 있습니다. 제단 위에는 거대한 힘이 깃든 황금 유물이 놓여 있습니다.',
+      choices: [
+        {
+          text: '제단에 피를 바친다 (최대 HP의 25% 손실, 150 골드 획득)',
+          action(game) {
+            const loss = Math.floor(game.player.maxHp * 0.25);
+            game.damagePlayerDirect(loss);
+            game.player.gold += 150;
+            return `피를 바치고 150 골드를 손에 넣었습니다! (-${loss} HP)`;
+          }
+        },
+        {
+          text: '제단을 정화하고 떠난다 (아무 일도 일어나지 않음)',
+          action(game) { return '불길한 제단을 뒤로 하고 조용히 발걸음을 옮겼습니다.'; }
+        }
+      ]
+    },
+    {
+      title: '고대의 대장간',
+      lore: '푸른 영혼의 불꽃이 타오르는 무인의 대장간입니다. 망치와 모루가 스스로 울리며 새로운 주인을 기다립니다.',
+      choices: [
+        {
+          text: '카드를 1장 제련한다 (체력 8 소모)',
+          action(game) {
+            game.damagePlayerDirect(8);
+            game.openCardSelectModal('제련할 카드를 선택하세요', card => {
+              card.upgraded = true;
+              game.saveGame();
+              game.proceedToMap();
+            }, c => !c.upgraded);
+            return null;
+          }
+        },
+        {
+          text: '모루에 기도를 올린다 (최대 HP +8 증가)',
+          action(game) {
+            game.player.maxHp += 8;
+            game.healPlayer(8);
+            return '고대 전사들의 축복으로 최대 HP가 8 증가했습니다!';
+          }
+        }
+      ]
+    },
+    {
+      title: '살아 숨쉬는 벽',
+      lore: '탑의 벽면이 사람의 얼굴처럼 일그러지며 고통스러운 비명을 지릅니다. 당신의 덱을 갈망하는 듯 입을 벌립니다.',
+      choices: [
+        {
+          text: '벽에 카드를 먹인다 (덱에서 불필요한 카드 1장 영구 제거)',
+          action(game) {
+            game.openCardSelectModal('제거할 카드를 선택하세요', card => {
+              const idx = game.player.deck.findIndex(c => c === card);
+              if (idx !== -1) game.player.deck.splice(idx, 1);
+              game.saveGame();
+              game.proceedToMap();
+            });
+            return null;
+          }
+        },
+        {
+          text: '벽의 보석을 떼어낸다 (골드 90 획득, 약화 2 획득)',
+          action(game) {
+            game.player.gold += 90;
+            return '벽에서 빛나는 보석을 떼어내 90 골드를 챙겼습니다!';
+          }
+        }
+      ]
+    },
+    {
+      title: '신비한 연금술사의 가판대',
+      lore: '음산한 후드를 쓴 연금술사가 유리병에 담긴 형형색색의 액체를 흔들며 당신을 올려다봅니다.',
+      choices: [
+        {
+          text: '미지의 영약 마시기 (골드 50 지불, 무작위 유물 1개 획득)',
+          action(game) {
+            if (game.player.gold >= 50) {
+              game.player.gold -= 50;
+              const unowned = Object.keys(RELICS_DB).filter(r => !game.player.relics.includes(r));
+              if (unowned.length > 0) {
+                const picked = unowned[Math.floor(Math.random() * unowned.length)];
+                game.obtainRelic(picked);
+                return `연금술사가 [${RELICS_DB[picked].name}] 유물을 건넸습니다!`;
+              }
+              return '더 이상 얻을 유물이 없습니다.';
+            } else {
+              return '골드가 부족하여 연금술사가 쫓아냈습니다.';
+            }
+          }
+        },
+        {
+          text: '정중히 거절하고 지나친다',
+          action(game) { return '의심스러운 가판대를 지나쳐 탑의 계단을 올랐습니다.'; }
+        }
+      ]
+    }
+  ];
+
+  /* =========================================================================
+     6. CORE GAME STATE & ENGINE CONTROLLER
+     ========================================================================= */
+  class IronAscensionGame {
+    constructor() {
+      this.SAVE_KEY = 'iron_ascension_save_v1';
+      this.META_KEY = 'iron_ascension_meta_v1';
+      
+      this.meta = this.loadMeta();
+      this.state = null;
+      this.player = null;
+      this.enemies = [];
+      this.mapGraph = [];
+      this.currentFloor = 1;
+      this.currentNode = null;
+      this.selectedCard = null;
+      this.targetEnemy = null;
+      this.cardRemovalCost = 75;
+
+      this.initDomReferences();
+      this.bindEvents();
+      this.checkSavedGame();
+    }
+
+    loadMeta() {
+      try {
+        const d = localStorage.getItem(this.META_KEY);
+        return d ? JSON.parse(d) : { maxAscension: 0, currentAscension: 0 };
+      } catch (e) {
+        return { maxAscension: 0, currentAscension: 0 };
+      }
+    }
+
+    saveMeta() {
+      localStorage.setItem(this.META_KEY, JSON.stringify(this.meta));
+    }
+
+    saveGame() {
+      if (!this.player) return;
+      const data = {
+        meta: this.meta,
+        player: {
+          hp: this.player.hp,
+          maxHp: this.player.maxHp,
+          gold: this.player.gold,
+          relics: this.player.relics,
+          deck: this.player.deck.map(c => ({ id: c.id, upgraded: !!c.upgraded }))
+        },
+        currentFloor: this.currentFloor,
+        currentNode: this.currentNode,
+        mapGraph: this.mapGraph,
+        cardRemovalCost: this.cardRemovalCost,
+        activeScreen: this.activeScreenId
+      };
+      localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
+    }
+
+    checkSavedGame() {
+      const d = localStorage.getItem(this.SAVE_KEY);
+      if (d) {
+        this.dom.btnContinueGame.style.display = 'block';
+      } else {
+        this.dom.btnContinueGame.style.display = 'none';
+      }
+      this.updateAscensionUI();
+    }
+
+    initDomReferences() {
+      this.dom = {
+        // Screens
+        titleScreen: document.getElementById('title-screen'),
+        mapScreen: document.getElementById('map-screen'),
+        combatScreen: document.getElementById('combat-screen'),
+        rewardScreen: document.getElementById('reward-screen'),
+        restScreen: document.getElementById('rest-screen'),
+        shopScreen: document.getElementById('shop-screen'),
+        eventScreen: document.getElementById('event-screen'),
+        victoryScreen: document.getElementById('victory-screen'),
+        gameoverScreen: document.getElementById('gameover-screen'),
+
+        // Top bar
+        barAscension: document.getElementById('bar-ascension'),
+        barFloor: document.getElementById('bar-floor'),
+        barHpFill: document.getElementById('bar-hp-fill'),
+        barHpText: document.getElementById('bar-hp-text'),
+        barGoldText: document.getElementById('bar-gold-text'),
+        barRelics: document.getElementById('bar-relics'),
+        topDeckCount: document.getElementById('top-deck-count'),
+
+        // Buttons
+        btnNewGame: document.getElementById('btn-new-game'),
+        btnContinueGame: document.getElementById('btn-continue-game'),
+        btnAscPrev: document.getElementById('btn-asc-prev'),
+        btnAscNext: document.getElementById('btn-asc-next'),
+        labelAscension: document.getElementById('label-ascension'),
+        btnGuide: document.getElementById('btn-guide'),
+        btnSoundToggle: document.getElementById('btn-sound-toggle'),
+        btnViewDeck: document.getElementById('btn-view-deck'),
+        btnAbandonRun: document.getElementById('btn-abandon-run'),
+        btnEndTurn: document.getElementById('btn-end-turn'),
+        btnProceedMap: document.getElementById('btn-proceed-map'),
+        btnRestHeal: document.getElementById('btn-rest-heal'),
+        btnRestSmith: document.getElementById('btn-rest-smith'),
+        restHealDesc: document.getElementById('rest-heal-desc'),
+        btnLeaveShop: document.getElementById('btn-leave-shop'),
+        btnShopRemoveCard: document.getElementById('btn-shop-remove-card'),
+        shopRemovalPrice: document.getElementById('shop-removal-price'),
+        btnVictoryRestart: document.getElementById('btn-victory-restart'),
+        btnDefeatRestart: document.getElementById('btn-defeat-restart'),
+
+        // Combat containers
+        combatArena: document.getElementById('combat-arena'),
+        fctLayer: document.getElementById('fct-layer'),
+        heroAvatar: document.getElementById('hero-avatar'),
+        heroHpFill: document.getElementById('hero-hp-fill'),
+        heroHpText: document.getElementById('hero-hp-text'),
+        heroBlock: document.getElementById('hero-block'),
+        heroStatuses: document.getElementById('hero-statuses'),
+        enemyGroup: document.getElementById('enemy-group'),
+        combatEnergy: document.getElementById('combat-energy'),
+        combatMaxEnergy: document.getElementById('combat-max-energy'),
+        handContainer: document.getElementById('hand-container'),
+        countDrawPile: document.getElementById('count-draw-pile'),
+        countDiscardPile: document.getElementById('count-discard-pile'),
+        countExhaustPile: document.getElementById('count-exhaust-pile'),
+        btnDrawPile: document.getElementById('btn-draw-pile'),
+        btnDiscardPile: document.getElementById('btn-discard-pile'),
+        btnExhaustPile: document.getElementById('btn-exhaust-pile'),
+
+        // Map container
+        mapRowsWrapper: document.getElementById('map-rows-wrapper'),
+        mapSvg: document.getElementById('map-svg'),
+        mapScrollArea: document.getElementById('map-scroll-area'),
+
+        // Modals
+        modalDeckViewer: document.getElementById('modal-deck-viewer'),
+        modalDeckTitle: document.getElementById('modal-deck-title'),
+        modalDeckGrid: document.getElementById('modal-deck-grid'),
+        btnCloseDeckModal: document.getElementById('btn-close-deck-modal'),
+
+        modalCardSelect: document.getElementById('modal-card-select'),
+        modalSelectTitle: document.getElementById('modal-select-title'),
+        modalSelectGrid: document.getElementById('modal-select-grid'),
+        btnCloseSelectModal: document.getElementById('btn-close-select-modal'),
+
+        // Tooltip
+        tooltip: document.getElementById('global-tooltip'),
+
+        // Containers
+        rewardList: document.getElementById('reward-list'),
+        shopCardsContainer: document.getElementById('shop-cards-container'),
+        shopRelicsContainer: document.getElementById('shop-relics-container'),
+        eventTitle: document.getElementById('event-title'),
+        eventLore: document.getElementById('event-lore'),
+        eventChoices: document.getElementById('event-choices')
+      };
+    }
+
+    bindEvents() {
+      this.dom.btnNewGame.onclick = () => this.startNewRun();
+      this.dom.btnContinueGame.onclick = () => this.continueRun();
+      this.dom.btnAscPrev.onclick = () => this.changeAscension(-1);
+      this.dom.btnAscNext.onclick = () => this.changeAscension(1);
+      this.dom.btnSoundToggle.onclick = () => {
+        const on = sound.toggleMute();
+        this.dom.btnSoundToggle.textContent = on ? '🔊 소리 켬' : '🔇 음소거';
+      };
+      this.dom.btnViewDeck.onclick = () => this.openDeckViewer('내 덱 카드 목록', this.player.deck);
+      this.dom.btnCloseDeckModal.onclick = () => this.dom.modalDeckViewer.classList.remove('active');
+      this.dom.btnCloseSelectModal.onclick = () => this.dom.modalCardSelect.classList.remove('active');
+
+      this.dom.btnDrawPile.onclick = () => {
+        if (this.state && this.state.drawPile) {
+          this.openDeckViewer('뽑을 카드 더미', this.state.drawPile);
+        }
+      };
+      this.dom.btnDiscardPile.onclick = () => {
+        if (this.state && this.state.discardPile) {
+          this.openDeckViewer('버린 카드 더미', this.state.discardPile);
+        }
+      };
+      this.dom.btnExhaustPile.onclick = () => {
+        if (this.state && this.state.exhaustPile) {
+          this.openDeckViewer('소멸된 카드 더미', this.state.exhaustPile);
+        }
+      };
+
+      this.dom.btnEndTurn.onclick = () => this.endPlayerTurn();
+      this.dom.btnProceedMap.onclick = () => this.proceedToMap();
+      this.dom.btnLeaveShop.onclick = () => this.proceedToMap();
+      this.dom.btnRestHeal.onclick = () => this.handleRestHeal();
+      this.dom.btnRestSmith.onclick = () => this.handleRestSmith();
+      this.dom.btnShopRemoveCard.onclick = () => this.handleShopCardRemoval();
+
+      this.dom.btnVictoryRestart.onclick = () => this.startNewRun();
+      this.dom.btnDefeatRestart.onclick = () => this.startNewRun();
+
+      this.dom.btnAbandonRun.onclick = () => {
+        if (confirm('현재 진행 상황을 포기하고 메인 메뉴로 돌아가시겠습니까?')) {
+          localStorage.removeItem(this.SAVE_KEY);
+          this.checkSavedGame();
+          this.showScreen(this.dom.titleScreen);
+        }
+      };
+
+      this.dom.btnGuide.onclick = () => {
+        alert('⚔️ [IRON ASCENSION 전략 가이드]\n\n' +
+              '1. 독 덱: 독 묻은 칼날, 맹독 투척, 촉매(2~3배 폭증)로 보스를 녹입니다.\n' +
+              '2. 방어도 압축 덱: 바리케이드(방어도 보존), 참호(2배), 몸통 박치기(방어도 수치만큼 피해)로 무적의 방패가 됩니다.\n' +
+              '3. 힘 & 연타 덱: 발화, 악마화, 몸풀기, 한계돌파로 힘을 올려 대검(힘 3~5배)과 연속 타격으로 적을 분쇄합니다.\n' +
+              '4. 승천(Ascension): 클리어 시 더 강력한 몬스터와 패널티가 주어지는 상위 승천(1~5단계)이 해금됩니다!');
+      };
+
+      // Outside click closes modal
+      window.onclick = (e) => {
+        if (e.target === this.dom.modalDeckViewer) this.dom.modalDeckViewer.classList.remove('active');
+        if (e.target === this.dom.modalCardSelect) this.dom.modalCardSelect.classList.remove('active');
+      };
+    }
+
+    updateAscensionUI() {
+      this.dom.labelAscension.textContent = this.meta.currentAscension;
+      this.dom.barAscension.textContent = `승천 ${this.meta.currentAscension}`;
+    }
+
+    changeAscension(delta) {
+      sound.playClick();
+      const next = this.meta.currentAscension + delta;
+      if (next >= 0 && next <= this.meta.maxAscension && next <= 5) {
+        this.meta.currentAscension = next;
+        this.updateAscensionUI();
+        this.saveMeta();
+      }
+    }
+
+    showScreen(screenDom) {
+      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+      screenDom.classList.add('active');
+      this.activeScreenId = screenDom.id;
+    }
+
+    /* =========================================================================
+       7. RUN INITIALIZATION & PROCEDURAL MAP GENERATOR
+       ========================================================================= */
+    startNewRun() {
+      sound.playClick();
+      const asc = this.meta.currentAscension;
+      const startMaxHp = asc >= 4 ? 70 : 80;
+
+      this.player = {
+        hp: startMaxHp,
+        maxHp: startMaxHp,
+        gold: 99,
+        baseEnergy: 3,
+        relics: ['burning_blood'],
+        deck: [
+          this.createCardInstance('strike'),
+          this.createCardInstance('strike'),
+          this.createCardInstance('strike'),
+          this.createCardInstance('strike'),
+          this.createCardInstance('strike'),
+          this.createCardInstance('defend'),
+          this.createCardInstance('defend'),
+          this.createCardInstance('defend'),
+          this.createCardInstance('defend'),
+          this.createCardInstance('bash')
+        ]
+      };
+
+      this.currentFloor = 1;
+      this.currentNode = null;
+      this.cardRemovalCost = 75;
+      this.generateMapGraph();
+
+      this.updateTopBar();
+      this.renderMap();
+      this.showScreen(this.dom.mapScreen);
+      this.saveGame();
+    }
+
+    continueRun() {
+      sound.playClick();
+      try {
+        const raw = localStorage.getItem(this.SAVE_KEY);
+        if (!raw) return this.startNewRun();
+        const data = JSON.parse(raw);
+
+        this.player = {
+          hp: data.player.hp,
+          maxHp: data.player.maxHp,
+          gold: data.player.gold,
+          baseEnergy: 3,
+          relics: data.player.relics,
+          deck: data.player.deck.map(c => this.createCardInstance(c.id, c.upgraded))
+        };
+        this.currentFloor = data.currentFloor;
+        this.currentNode = data.currentNode;
+        this.mapGraph = data.mapGraph;
+        this.cardRemovalCost = data.cardRemovalCost || 75;
+
+        this.updateTopBar();
+        this.renderMap();
+        this.showScreen(this.dom.mapScreen);
+      } catch (e) {
+        console.error('Failed to load save, starting fresh', e);
+        this.startNewRun();
+      }
+    }
+
+    createCardInstance(id, upgraded = false) {
+      const template = CARDS_DB[id];
+      if (!template) throw new Error('Card not found: ' + id);
+      return {
+        id: template.id,
+        name: template.name,
+        cost: template.cost,
+        type: template.type,
+        rarity: template.rarity,
+        icon: template.icon,
+        desc: template.desc,
+        upgradedDesc: template.upgradedDesc,
+        upgraded: upgraded,
+        exhaust: template.exhaust,
+        ethereal: template.ethereal,
+        play: template.play,
+        getCost: template.getCost
+      };
+    }
+
+    generateMapGraph() {
+      // 15 Floors procedural graph
+      this.mapGraph = [];
+      const nodeTypesPool = ['battle', 'battle', 'event', 'shop', 'elite'];
+
+      for (let floor = 1; floor <= 15; floor++) {
+        const rowNodes = [];
+        if (floor === 1) {
+          // 3 Starting battle nodes
+          for (let i = 0; i < 3; i++) {
+            rowNodes.push({ id: `1-${i}`, floor: 1, col: i, type: 'battle', connections: [] });
+          }
+        } else if (floor === 15) {
+          // Final Boss
+          rowNodes.push({ id: `15-0`, floor: 15, col: 0, type: 'boss', connections: [] });
+        } else if (floor === 14) {
+          // Floor 14: Guaranteed Campfire Rest Sites right before boss
+          for (let i = 0; i < 2; i++) {
+            rowNodes.push({ id: `14-${i}`, floor: 14, col: i, type: 'rest', connections: [0] });
+          }
+        } else if (floor === 9) {
+          // Mid-tower checkpoint rest / shop
+          for (let i = 0; i < 3; i++) {
+            rowNodes.push({ id: `9-${i}`, floor: 9, col: i, type: i === 1 ? 'rest' : 'shop', connections: [] });
+          }
+        } else {
+          // Branching floors
+          const count = 3;
+          for (let i = 0; i < count; i++) {
+            let type = nodeTypesPool[Math.floor(Math.random() * nodeTypesPool.length)];
+            // Elites only appear floor 6+
+            if (floor < 6 && type === 'elite') type = 'battle';
+            // Ensure at least some rest sites
+            if (floor === 6 && i === 1) type = 'rest';
+            rowNodes.push({ id: `${floor}-${i}`, floor, col: i, type, connections: [] });
+          }
+        }
+        this.mapGraph.push(rowNodes);
+      }
+
+      // Connect nodes forward
+      for (let floorIdx = 0; floorIdx < 14; floorIdx++) {
+        const currentFloorNodes = this.mapGraph[floorIdx];
+        const nextFloorNodes = this.mapGraph[floorIdx + 1];
+
+        currentFloorNodes.forEach((node, colIdx) => {
+          if (floorIdx + 1 === 14) {
+            // All lead to boss
+            node.connections = [0];
+          } else {
+            // Forward connections to adjacent cols
+            const validCols = [];
+            if (nextFloorNodes[colIdx]) validCols.push(colIdx);
+            if (colIdx > 0 && nextFloorNodes[colIdx - 1]) validCols.push(colIdx - 1);
+            if (colIdx < nextFloorNodes.length - 1 && nextFloorNodes[colIdx + 1]) validCols.push(colIdx + 1);
+            
+            node.connections = validCols.length > 0 ? validCols : [0];
+          }
+        });
+      }
+    }
+
+    renderMap() {
+      this.dom.mapRowsWrapper.innerHTML = '';
+      const rowsReverse = [...this.mapGraph].reverse();
+
+      rowsReverse.forEach(row => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'map-floor-row';
+
+        row.forEach(node => {
+          const nodeDiv = document.createElement('div');
+          nodeDiv.className = `map-node ${node.type}`;
+          nodeDiv.id = `node-${node.id}`;
+
+          // Icons
+          const icons = { battle: '⚔️', elite: '👹', rest: '⛺', shop: '💰', event: '❓', boss: '💀' };
+          nodeDiv.innerHTML = icons[node.type] || '⚔️';
+
+          // Node availability
+          const isCurrent = this.currentNode && this.currentNode.id === node.id;
+          let isAvailable = false;
+
+          if (!this.currentNode) {
+            if (node.floor === 1) isAvailable = true;
+          } else {
+            if (node.floor === this.currentNode.floor + 1) {
+              const currentDef = this.mapGraph[this.currentNode.floor - 1][this.currentNode.col];
+              if (currentDef && currentDef.connections.includes(node.col)) {
+                isAvailable = true;
+              }
+            }
+          }
+
+          if (isCurrent) nodeDiv.classList.add('current');
+          if (isAvailable) {
+            nodeDiv.classList.add('available');
+            nodeDiv.onclick = () => this.selectMapNode(node);
+          }
+          if (this.currentNode && node.floor < this.currentNode.floor) {
+            nodeDiv.classList.add('visited');
+          }
+
+          rowDiv.appendChild(nodeDiv);
+        });
+
+        this.dom.mapRowsWrapper.appendChild(rowDiv);
+      });
+
+      // Draw SVG connection lines after DOM layout
+      setTimeout(() => this.drawMapLines(), 50);
+
+      // Auto scroll to current floor
+      if (this.currentNode) {
+        setTimeout(() => {
+          const el = document.getElementById(`node-${this.currentNode.id}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      }
+    }
+
+    drawMapLines() {
+      const svg = this.dom.mapSvg;
+      svg.innerHTML = '';
+      const containerRect = this.dom.mapRowsWrapper.getBoundingClientRect();
+
+      for (let f = 0; f < 14; f++) {
+        const row = this.mapGraph[f];
+        const nextRow = this.mapGraph[f + 1];
+
+        row.forEach(node => {
+          const nEl = document.getElementById(`node-${node.id}`);
+          if (!nEl) return;
+          const r1 = nEl.getBoundingClientRect();
+
+          node.connections.forEach(nextCol => {
+            const nextNode = nextRow[nextCol];
+            if (!nextNode) return;
+            const nextEl = document.getElementById(`node-${nextNode.id}`);
+            if (!nextEl) return;
+            const r2 = nextEl.getBoundingClientRect();
+
+            const x1 = r1.left + r1.width / 2 - containerRect.left;
+            const y1 = r1.top + r1.height / 2 - containerRect.top;
+            const x2 = r2.left + r2.width / 2 - containerRect.left;
+            const y2 = r2.top + r2.height / 2 - containerRect.top;
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('stroke', '#2e3d5c');
+            line.setAttribute('stroke-width', '2.5');
+            line.setAttribute('stroke-dasharray', '5,5');
+            svg.appendChild(line);
+          });
+        });
+      }
+    }
+
+    selectMapNode(node) {
+      sound.playClick();
+      this.currentNode = node;
+      this.currentFloor = node.floor;
+      this.updateTopBar();
+      this.saveGame();
+
+      switch (node.type) {
+        case 'battle':
+          this.startCombat('normal');
+          break;
+        case 'elite':
+          this.startCombat('elite');
+          break;
+        case 'boss':
+          this.startCombat('boss');
+          break;
+        case 'rest':
+          this.openRestSite();
+          break;
+        case 'shop':
+          this.openShop();
+          break;
+        case 'event':
+          this.openEvent();
+          break;
+      }
+    }
+
+    proceedToMap() {
+      sound.playClick();
+      this.renderMap();
+      this.showScreen(this.dom.mapScreen);
+      this.saveGame();
+    }
+
+    /* =========================================================================
+       8. COMBAT SYSTEM & TURN-BASED MECHANICS
+       ========================================================================= */
+    startCombat(encounterType) {
+      this.state = {
+        turn: 1,
+        energy: this.player.baseEnergy,
+        maxEnergy: this.player.baseEnergy,
+        drawPile: this.shuffle([...this.player.deck]),
+        hand: [],
+        discardPile: [],
+        exhaustPile: [],
+        attackCount: 0,
+        shurikenCount: 0,
+        flowerTurns: 0,
+        puzzleTriggered: false
+      };
+
+      // Reset Player Combat stats
+      this.player.energy = this.player.baseEnergy;
+      this.player.block = 0;
+      this.player.statuses = { strength: 0, dexterity: 0, vulnerable: 0, weak: 0, poison: 0 };
+      this.player.thorns = 0;
+      this.player.tempStrength = 0;
+
+      // Spawn Enemies
+      this.enemies = this.generateEnemies(encounterType);
+
+      // Trigger OnCombatStart Relics
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic && relic.onCombatStart) relic.onCombatStart(this);
+      });
+
+      this.showScreen(this.dom.combatScreen);
+      this.startPlayerTurn();
+    }
+
+    generateEnemies(encounterType) {
+      const asc = this.meta.currentAscension;
+      const dmgMultiplier = asc >= 2 ? 1.1 : 1.0;
+      const eliteBonus = asc >= 1 ? 1.15 : 1.0;
+
+      if (encounterType === 'boss') {
+        const tmpl = ENEMY_TEMPLATES.void_sovereign;
+        const hp = asc >= 5 ? Math.floor(tmpl.maxHp * 1.25) : tmpl.maxHp;
+        return [{
+          id: 'enemy_boss',
+          template: tmpl,
+          name: tmpl.name,
+          icon: tmpl.icon,
+          maxHp: hp,
+          hp: hp,
+          block: 0,
+          statuses: {},
+          intent: null
+        }];
+      } else if (encounterType === 'elite') {
+        const pool = ['gremlin_nob', 'lagavulin'];
+        const chosenKey = pool[Math.floor(Math.random() * pool.length)];
+        const tmpl = ENEMY_TEMPLATES[chosenKey];
+        const hp = Math.floor(tmpl.maxHp * eliteBonus);
+        const enemy = {
+          id: 'enemy_0',
+          template: tmpl,
+          name: tmpl.name,
+          icon: tmpl.icon,
+          maxHp: hp,
+          hp: hp,
+          block: chosenKey === 'lagavulin' ? 8 : 0,
+          isAsleep: chosenKey === 'lagavulin',
+          statuses: {},
+          intent: null
+        };
+        return [enemy];
+      } else {
+        // Normal battle: 1 or 2 monsters
+        const pool = ['cultist', 'jaw_worm', 'acid_slime', 'red_slaver'];
+        const count = (this.currentFloor > 4 && Math.random() < 0.4) ? 2 : 1;
+        const enemies = [];
+        for (let i = 0; i < count; i++) {
+          const key = pool[Math.floor(Math.random() * pool.length)];
+          const tmpl = ENEMY_TEMPLATES[key];
+          const hp = Math.floor(tmpl.maxHp * dmgMultiplier);
+          enemies.push({
+            id: `enemy_${i}`,
+            template: tmpl,
+            name: count > 1 ? `${tmpl.name} ${i+1}` : tmpl.name,
+            icon: tmpl.icon,
+            maxHp: hp,
+            hp: hp,
+            block: 0,
+            statuses: {},
+            intent: null
+          });
+        }
+        return enemies;
+      }
+    }
+
+    startPlayerTurn() {
+      this.state.attackCount = 0;
+      this.state.shurikenCount = 0;
+      this.player.noDraw = false;
+
+      // Energy & block reset
+      if (this.state.turn === 1) {
+        // Turn 1: preserve energy from Lantern & block from Anchor
+        this.player.energy = Math.max(this.player.energy || 0, this.player.baseEnergy);
+      } else {
+        this.player.energy = this.player.baseEnergy;
+        // Clear Block if Barricade is not active
+        if (!this.player.statuses.barricade) {
+          this.player.block = 0;
+        }
+      }
+
+      // Relics onTurnStart
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic && relic.onTurnStart) relic.onTurnStart(this);
+      });
+
+      // Demon Form & Noxious Fumes triggers
+      if (this.player.statuses.demon_form) {
+        this.applyPlayerStatus('strength', this.player.statuses.demon_form);
+      }
+      if (this.player.statuses.noxious_fumes) {
+        this.enemies.forEach(e => {
+          if (e.hp > 0) this.applyEnemyStatus(e, 'poison', this.player.statuses.noxious_fumes);
+        });
+      }
+
+      // Decrement Temporary Buffs
+      if (this.player.tempStrength) {
+        this.player.statuses.strength = Math.max(0, (this.player.statuses.strength || 0) - this.player.tempStrength);
+        this.player.tempStrength = 0;
+      }
+      if (this.player.statuses.vulnerable > 0) this.player.statuses.vulnerable--;
+      if (this.player.statuses.weak > 0) this.player.statuses.weak--;
+
+      // Generate Enemy Intents
+      this.enemies.forEach(e => {
+        if (e.hp > 0) {
+          e.intent = e.template.ai(e, this.state.turn);
+        }
+      });
+
+      // Draw 5 Cards
+      this.drawCards(5);
+
+      this.updateCombatUI();
+    }
+
+    drawCards(count) {
+      if (this.player.noDraw) return;
+      for (let i = 0; i < count; i++) {
+        if (this.state.drawPile.length === 0) {
+          if (this.state.discardPile.length === 0) break;
+          this.state.drawPile = this.shuffle([...this.state.discardPile]);
+          this.state.discardPile = [];
+        }
+        const card = this.state.drawPile.pop();
+        this.state.hand.push(card);
+        sound.playCardDraw();
+      }
+      this.renderHand();
+    }
+
+    renderHand() {
+      this.dom.handContainer.innerHTML = '';
+      const total = this.state.hand.length;
+
+      this.state.hand.forEach((card, idx) => {
+        const cardEl = this.createCardElement(card);
+
+        // Curved Hand Layout
+        const rotation = (idx - (total - 1) / 2) * 4.5;
+        const translateY = Math.abs(idx - (total - 1) / 2) * 5;
+        cardEl.style.transform = `rotate(${rotation}deg) translateY(${translateY}px)`;
+
+        // Energy Check
+        const cost = this.getCardCost(card);
+        const playable = cost === 'X' ? true : this.player.energy >= cost;
+        if (!playable) cardEl.classList.add('unplayable');
+
+        cardEl.onclick = () => this.handleCardClick(card, cardEl);
+
+        this.dom.handContainer.appendChild(cardEl);
+      });
+
+      this.updatePileCounts();
+    }
+
+    createCardElement(card) {
+      const el = document.createElement('div');
+      const cost = this.getCardCost(card);
+      el.className = `card-item card-type-${card.type} ${card.upgraded ? 'upgraded' : ''}`;
+      
+      const desc = card.upgraded && card.upgradedDesc ? card.upgradedDesc : card.desc;
+
+      el.innerHTML = `
+        <div class="card-cost">${cost}</div>
+        <div class="card-header">
+          <div class="card-title">${card.name}${card.upgraded ? '+' : ''}</div>
+        </div>
+        <div class="card-art-box">${card.icon || '⚔️'}</div>
+        <div class="card-type-label">${card.type}</div>
+        <div class="card-desc">${desc}</div>
+      `;
+      return el;
+    }
+
+    getCardCost(card) {
+      if (card.getCost) return card.getCost(card.upgraded);
+      return card.cost;
+    }
+
+    handleCardClick(card, cardEl) {
+      const cost = this.getCardCost(card);
+      if (cost !== 'X' && this.player.energy < cost) {
+        sound.playClick();
+        return;
+      }
+
+      // If attack that needs target
+      const aliveEnemies = this.enemies.filter(e => e.hp > 0);
+      if (aliveEnemies.length === 0) return;
+
+      if (this.selectedCard === card) {
+        // Deselect
+        this.selectedCard = null;
+        document.querySelectorAll('.card-item').forEach(c => c.classList.remove('selected'));
+        document.querySelectorAll('.combat-entity').forEach(e => e.classList.remove('targeted'));
+        return;
+      }
+
+      this.selectedCard = card;
+      document.querySelectorAll('.card-item').forEach(c => c.classList.remove('selected'));
+      cardEl.classList.add('selected');
+
+      // If single enemy, or card is AOE/Self-buff/Skill, play immediately!
+      if (card.type === 'skill' || card.type === 'power' || aliveEnemies.length === 1 || card.id === 'cleave' || card.id === 'reaper' || card.id === 'whirlwind' || card.id === 'shockwave' || card.id === 'sword_boomerang') {
+        this.playCard(card, aliveEnemies[0]);
+      } else {
+        // Highlight enemies for target selection
+        document.querySelectorAll('.enemy-entity').forEach(en => en.classList.add('targeted'));
+      }
+    }
+
+    playCard(card, targetEnemy) {
+      const cost = this.getCardCost(card);
+      if (cost !== 'X') {
+        this.player.energy -= cost;
+      }
+
+      // Remove from hand
+      const idx = this.state.hand.indexOf(card);
+      if (idx !== -1) this.state.hand.splice(idx, 1);
+
+      // Execute card logic
+      card.play(this, targetEnemy);
+
+      // Relic trigger on card played
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic && relic.onCardPlayed) relic.onCardPlayed(this, card);
+      });
+
+      // Gremlin Nob Enrage check!
+      if (card.type === 'skill') {
+        this.enemies.forEach(e => {
+          if (e.hp > 0 && e.statuses && e.statuses.enrage) {
+            e.statuses.strength = (e.statuses.strength || 0) + e.statuses.enrage;
+            this.showFCT(`+${e.statuses.enrage} 힘 (격노)`, 'buff', this.getEnemyCenter(e));
+          }
+        });
+      }
+
+      // Send to Exhaust or Discard
+      if (card.exhaust) {
+        this.state.exhaustPile.push(card);
+      } else {
+        this.state.discardPile.push(card);
+      }
+
+      this.selectedCard = null;
+      this.checkCombatState();
+      this.updateCombatUI();
+      this.renderHand();
+    }
+
+    endPlayerTurn() {
+      sound.playClick();
+
+      // Trigger OnTurnEnd Relics (e.g. Orichalcum)
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic && relic.onTurnEnd) relic.onTurnEnd(this);
+      });
+
+      // Discard remaining hand (handle Ethereal cards)
+      while (this.state.hand.length > 0) {
+        const c = this.state.hand.pop();
+        if (c.ethereal) {
+          this.state.exhaustPile.push(c);
+        } else {
+          this.state.discardPile.push(c);
+        }
+      }
+      this.renderHand();
+
+      // Enemy Poison Resolution
+      this.enemies.forEach(e => {
+        if (e.hp > 0 && e.statuses.poison > 0) {
+          const dmg = e.statuses.poison;
+          e.hp = Math.max(0, e.hp - dmg);
+          e.statuses.poison--;
+          this.showFCT(`${dmg} 독 피해`, 'poison', this.getEnemyCenter(e));
+        }
+      });
+
+      // Check if enemies died to poison
+      if (this.checkCombatState()) return;
+
+      // Execute Enemy Intents sequentially
+      this.executeEnemyIntents();
+    }
+
+    executeEnemyIntents() {
+      const activeEnemies = this.enemies.filter(e => e.hp > 0);
+      let step = 0;
+
+      const executeNext = () => {
+        if (step >= activeEnemies.length) {
+          // Check player death or start next turn
+          if (this.player.hp <= 0) {
+            this.handlePlayerDefeat();
+          } else {
+            this.state.turn++;
+            this.startPlayerTurn();
+          }
+          return;
+        }
+
+        const enemy = activeEnemies[step];
+        if (enemy.hp > 0 && enemy.intent) {
+          // Clear enemy block unless special
+          enemy.block = 0;
+          enemy.template.execute(this, enemy, enemy.intent);
+          this.updateCombatUI();
+        }
+
+        step++;
+        setTimeout(executeNext, 450);
+      };
+
+      setTimeout(executeNext, 300);
+    }
+
+    dealDamageToEnemy(enemy, rawDamage) {
+      if (enemy.hp <= 0) return 0;
+      sound.playStrike();
+
+      // Wake Lagavulin
+      if (enemy.isAsleep) {
+        enemy.isAsleep = false;
+        this.showFCT('잠에서 깨어남!', 'buff', this.getEnemyCenter(enemy));
+      }
+
+      let dmg = rawDamage;
+      // Vulnerable bonus (+50%)
+      if (enemy.statuses.vulnerable > 0) {
+        dmg = Math.floor(dmg * 1.5);
+      }
+
+      let unblocked = 0;
+      if (enemy.block >= dmg) {
+        enemy.block -= dmg;
+      } else {
+        unblocked = dmg - enemy.block;
+        enemy.block = 0;
+        enemy.hp = Math.max(0, enemy.hp - unblocked);
+      }
+
+      // Visual Shake
+      const avatar = document.querySelector(`#${enemy.id} .entity-avatar`);
+      if (avatar) {
+        avatar.classList.add('hit');
+        setTimeout(() => avatar.classList.remove('hit'), 300);
+      }
+
+      this.showFCT(`-${dmg}`, 'damage', this.getEnemyCenter(enemy));
+      this.checkCombatState();
+      this.updateCombatUI();
+      return unblocked;
+    }
+
+    dealDamageToPlayer(enemy, rawDamage) {
+      let dmg = rawDamage;
+      // Enemy Strength
+      if (enemy.statuses.strength) dmg += enemy.statuses.strength;
+      // Enemy Weak (-25%)
+      if (enemy.statuses.weak > 0) dmg = Math.floor(dmg * 0.75);
+      // Player Vulnerable (+50%)
+      if (this.player.statuses.vulnerable > 0) dmg = Math.floor(dmg * 1.5);
+
+      dmg = Math.max(0, dmg);
+
+      if (this.player.block >= dmg) {
+        this.player.block -= dmg;
+        sound.playBlock();
+      } else {
+        const unblocked = dmg - this.player.block;
+        this.player.block = 0;
+        this.player.hp = Math.max(0, this.player.hp - unblocked);
+        sound.playStrike();
+        this.screenShake();
+
+        // Centennial Puzzle Relic trigger
+        this.player.relics.forEach(rId => {
+          const r = RELICS_DB[rId];
+          if (r && r.onDamageTaken) r.onDamageTaken(this);
+        });
+      }
+
+      // Flame Barrier Thorns reaction
+      if (this.player.thorns > 0 && enemy.hp > 0) {
+        this.dealDamageToEnemy(enemy, this.player.thorns);
+      }
+
+      this.showFCT(`-${dmg}`, 'damage', this.getHeroCenter());
+      this.updateCombatUI();
+      this.updateTopBar();
+
+      if (this.player.hp <= 0) {
+        this.handlePlayerDefeat();
+      }
+    }
+
+    damagePlayerDirect(amount) {
+      this.player.hp = Math.max(0, this.player.hp - amount);
+      this.showFCT(`-${amount}`, 'damage', this.getHeroCenter());
+      this.updateTopBar();
+      if (this.player.hp <= 0) this.handlePlayerDefeat();
+    }
+
+    gainPlayerBlock(amount) {
+      let blk = amount + (this.player.statuses.dexterity || 0);
+      blk = Math.max(0, blk);
+      this.player.block += blk;
+      this.showFCT(`+${blk} 방어`, 'block', this.getHeroCenter());
+      this.updateCombatUI();
+    }
+
+    healPlayer(amount) {
+      this.player.hp = Math.min(this.player.maxHp, this.player.hp + amount);
+      this.updateTopBar();
+      if (this.activeScreenId === 'combat-screen') {
+        this.showFCT(`+${amount} HP`, 'buff', this.getHeroCenter());
+        this.updateCombatUI();
+      }
+    }
+
+    calcPlayerDamage(baseDamage, ignoreStrength = false) {
+      let dmg = baseDamage;
+      if (!ignoreStrength && this.player.statuses.strength) {
+        dmg += this.player.statuses.strength;
+      }
+      if (this.player.statuses.weak > 0) {
+        dmg = Math.floor(dmg * 0.75);
+      }
+      return Math.max(0, dmg);
+    }
+
+    calcPlayerBlock(baseBlock) {
+      let blk = baseBlock + (this.player.statuses.dexterity || 0);
+      return Math.max(0, blk);
+    }
+
+    applyPlayerStatus(status, amount) {
+      this.player.statuses[status] = (this.player.statuses[status] || 0) + amount;
+      this.showFCT(`+${amount} ${this.getStatusName(status)}`, 'buff', this.getHeroCenter());
+      this.updateCombatUI();
+    }
+
+    applyEnemyStatus(enemy, status, amount) {
+      enemy.statuses[status] = (enemy.statuses[status] || 0) + amount;
+      this.showFCT(`+${amount} ${this.getStatusName(status)}`, 'debuff', this.getEnemyCenter(enemy));
+      this.updateCombatUI();
+    }
+
+    getStatusName(s) {
+      const names = {
+        strength: '힘', dexterity: '민첩', vulnerable: '취약', weak: '약화',
+        poison: '독', barricade: '바리케이드', demon_form: '악마화', noxious_fumes: '유독 가스'
+      };
+      return names[s] || s;
+    }
+
+    checkCombatState() {
+      const allDead = this.enemies.every(e => e.hp <= 0);
+      if (allDead) {
+        setTimeout(() => this.handleVictory(), 400);
+        return true;
+      }
+      return false;
+    }
+
+    handleVictory() {
+      sound.playVictory();
+
+      // Trigger OnCombatEnd Relics (e.g. Burning Blood, Meat on the Bone)
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic && relic.onCombatEnd) relic.onCombatEnd(this);
+      });
+
+      // Boss Victory!
+      if (this.currentNode && this.currentNode.type === 'boss') {
+        this.handleBossVictory();
+        return;
+      }
+
+      this.openRewardScreen();
+    }
+
+    handleBossVictory() {
+      localStorage.removeItem(this.SAVE_KEY);
+      if (this.meta.currentAscension === this.meta.maxAscension && this.meta.maxAscension < 5) {
+        this.meta.maxAscension++;
+        this.meta.currentAscension = this.meta.maxAscension;
+        this.saveMeta();
+      }
+
+      const statsEl = document.getElementById('victory-stats');
+      statsEl.innerHTML = `
+        <p>도달 층수: 15 / 15 (정상)</p>
+        <p>최종 보유 덱: ${this.player.deck.length} 장</p>
+        <p>보유 유물: ${this.player.relics.length} 개</p>
+        <p>보유 골드: ${this.player.gold} G</p>
+        <p style="color:#ffd700; font-weight:800; margin-top:10px;">축하합니다! 승천 ${this.meta.maxAscension} 난이도가 해금되었습니다!</p>
+      `;
+      this.showScreen(this.dom.victoryScreen);
+    }
+
+    handlePlayerDefeat() {
+      sound.playDefeat();
+      localStorage.removeItem(this.SAVE_KEY);
+      this.checkSavedGame();
+
+      const statsEl = document.getElementById('defeat-stats');
+      statsEl.innerHTML = `
+        <p>도달 층수: ${this.currentFloor} / 15</p>
+        <p>보유 카드 수: ${this.player.deck.length} 장</p>
+        <p>보유 유물: ${this.player.relics.length} 개</p>
+      `;
+      this.showScreen(this.dom.gameoverScreen);
+    }
+
+    /* =========================================================================
+       9. COMBAT UI & FLOATING COMBAT TEXT
+       ========================================================================= */
+    updateCombatUI() {
+      // Hero stats
+      this.dom.heroHpText.textContent = `${this.player.hp} / ${this.player.maxHp}`;
+      this.dom.heroHpFill.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.heroBlock.style.display = this.player.block > 0 ? 'flex' : 'none';
+      this.dom.heroBlock.querySelector('span').textContent = this.player.block;
+
+      // Hero statuses
+      this.renderStatusRow(this.dom.heroStatuses, this.player.statuses);
+
+      // Energy
+      this.dom.combatEnergy.textContent = this.player.energy;
+      this.dom.combatMaxEnergy.textContent = `/ ${this.player.baseEnergy}`;
+
+      // Enemies
+      this.dom.enemyGroup.innerHTML = '';
+      this.enemies.forEach(enemy => {
+        const enemyDiv = document.createElement('div');
+        enemyDiv.className = `combat-entity enemy-entity ${enemy.hp <= 0 ? 'dead' : ''}`;
+        enemyDiv.id = enemy.id;
+
+        if (enemy.hp <= 0) {
+          enemyDiv.style.opacity = '0.15';
+          enemyDiv.style.pointerEvents = 'none';
+        }
+
+        // Intent calculations
+        let intentHtml = '';
+        if (enemy.hp > 0 && enemy.intent) {
+          let calculatedVal = enemy.intent.val;
+          if (enemy.intent.type.includes('attack')) {
+            if (enemy.statuses.strength) calculatedVal += enemy.statuses.strength;
+            if (enemy.statuses.weak > 0) calculatedVal = Math.floor(calculatedVal * 0.75);
+            if (this.player.statuses.vulnerable > 0) calculatedVal = Math.floor(calculatedVal * 1.5);
+          }
+          intentHtml = `
+            <div class="intent-bubble intent-${enemy.intent.type}" title="${enemy.intent.desc}">
+              <span>${enemy.intent.icon}</span>
+              <span>${calculatedVal > 0 ? calculatedVal : ''}</span>
+            </div>
+          `;
+        }
+
+        enemyDiv.innerHTML = `
+          ${intentHtml}
+          <div class="entity-avatar">${enemy.icon}</div>
+          <div class="entity-hud">
+            <div class="entity-name">${enemy.name}</div>
+            <div class="entity-hp-box">
+              <div class="entity-hp-fill" style="width: ${(enemy.hp / enemy.maxHp) * 100}%;"></div>
+              <div class="entity-hp-text">${enemy.hp} / ${enemy.maxHp}</div>
+            </div>
+            <div class="entity-block-badge" style="display: ${enemy.block > 0 ? 'flex' : 'none'};">🛡️ <span>${enemy.block}</span></div>
+            <div class="status-row"></div>
+          </div>
+        `;
+
+        this.renderStatusRow(enemyDiv.querySelector('.status-row'), enemy.statuses);
+
+        // Target click
+        enemyDiv.onclick = () => {
+          if (this.selectedCard && enemy.hp > 0) {
+            this.playCard(this.selectedCard, enemy);
+          }
+        };
+
+        this.dom.enemyGroup.appendChild(enemyDiv);
+      });
+
+      this.updateTopBar();
+    }
+
+    renderStatusRow(container, statuses) {
+      if (!container) return;
+      container.innerHTML = '';
+      if (!statuses) return;
+      for (const [key, val] of Object.entries(statuses)) {
+        if (val && val > 0) {
+          const badge = document.createElement('div');
+          badge.className = `status-badge status-${key.slice(0,4)}`;
+          badge.innerHTML = `${this.getStatusName(key)} <b>${val}</b>`;
+          container.appendChild(badge);
+        }
+      }
+    }
+
+    updatePileCounts() {
+      this.dom.countDrawPile.textContent = this.state.drawPile.length;
+      this.dom.countDiscardPile.textContent = this.state.discardPile.length;
+      this.dom.countExhaustPile.textContent = this.state.exhaustPile.length;
+    }
+
+    showFCT(text, type, pos) {
+      if (!pos || !this.dom.fctLayer) return;
+      const fct = document.createElement('div');
+      fct.className = `fct ${type}`;
+      fct.textContent = text;
+      fct.style.left = `${pos.x}px`;
+      fct.style.top = `${pos.y}px`;
+      this.dom.fctLayer.appendChild(fct);
+      setTimeout(() => fct.remove(), 1100);
+    }
+
+    getHeroCenter() {
+      const r = this.dom.heroAvatar.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - 20, y: r.top - 10 };
+    }
+
+    getEnemyCenter(enemy) {
+      const el = document.querySelector(`#${enemy.id} .entity-avatar`);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width / 2 - 20, y: r.top - 10 };
+      }
+      return { x: window.innerWidth * 0.7, y: window.innerHeight * 0.4 };
+    }
+
+    screenShake() {
+      document.body.classList.add('screen-shake');
+      setTimeout(() => document.body.classList.remove('screen-shake'), 350);
+    }
+
+    updateTopBar() {
+      if (!this.player) return;
+      this.dom.barHpText.textContent = `${this.player.hp} / ${this.player.maxHp}`;
+      this.dom.barHpFill.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
+      this.dom.barGoldText.textContent = `${this.player.gold} G`;
+      this.dom.barFloor.textContent = `층수: ${this.currentFloor} / 15`;
+      this.dom.topDeckCount.textContent = this.player.deck.length;
+
+      // Render Relics
+      this.dom.barRelics.innerHTML = '';
+      this.player.relics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        if (relic) {
+          const item = document.createElement('div');
+          item.className = 'relic-item';
+          item.innerHTML = relic.icon;
+          item.title = `${relic.name}: ${relic.desc}`;
+          this.dom.barRelics.appendChild(item);
+        }
+      });
+    }
+
+    /* =========================================================================
+       10. REWARD, REST, SHOP & EVENT SCREENS
+       ========================================================================= */
+    openRewardScreen() {
+      this.dom.rewardList.innerHTML = '';
+
+      // 1. Gold reward
+      let gold = Math.floor(Math.random() * 15) + 15;
+      if (this.currentNode && this.currentNode.type === 'elite') gold += 25;
+      // Golden idol relic check
+      if (this.player.relics.includes('golden_idol')) gold = Math.floor(gold * 1.25);
+
+      const goldEntry = document.createElement('div');
+      goldEntry.className = 'reward-entry';
+      goldEntry.innerHTML = `<span>💰 ${gold} 골드 획득</span><span>수령 ➔</span>`;
+      goldEntry.onclick = () => {
+        sound.playShopBuy();
+        this.player.gold += gold;
+        this.updateTopBar();
+        goldEntry.classList.add('claimed');
+      };
+      this.dom.rewardList.appendChild(goldEntry);
+
+      // 2. Card reward (choose 1 of 3)
+      const cardEntry = document.createElement('div');
+      cardEntry.className = 'reward-entry';
+      cardEntry.innerHTML = `<span>🎴 덱에 카드 추가 (3장 중 1장 선택)</span><span>선택 ➔</span>`;
+      cardEntry.onclick = () => {
+        sound.playClick();
+        this.openCardRewardSelection(cardEntry);
+      };
+      this.dom.rewardList.appendChild(cardEntry);
+
+      // 3. Elite Relic Drop
+      if (this.currentNode && this.currentNode.type === 'elite') {
+        const relicDropsCount = this.player.relics.includes('black_star') ? 2 : 1;
+        for (let i = 0; i < relicDropsCount; i++) {
+          const unowned = Object.keys(RELICS_DB).filter(r => !this.player.relics.includes(r));
+          if (unowned.length > 0) {
+            const picked = unowned[Math.floor(Math.random() * unowned.length)];
+            const rData = RELICS_DB[picked];
+            const relicEntry = document.createElement('div');
+            relicEntry.className = 'reward-entry';
+            relicEntry.innerHTML = `<span>${rData.icon} 고대 유물 [${rData.name}]</span><span>수령 ➔</span>`;
+            relicEntry.onclick = () => {
+              sound.playShopBuy();
+              this.obtainRelic(picked);
+              relicEntry.classList.add('claimed');
+            };
+            this.dom.rewardList.appendChild(relicEntry);
+          }
+        }
+      }
+
+      this.showScreen(this.dom.rewardScreen);
+      this.saveGame();
+    }
+
+    openCardRewardSelection(entryDom) {
+      const keys = Object.keys(CARDS_DB).filter(k => CARDS_DB[k].rarity !== 'basic');
+      const sample = this.shuffle([...keys]).slice(0, 3);
+      const cards = sample.map(k => this.createCardInstance(k));
+
+      this.openCardSelectModal('추가할 카드를 선택하세요', card => {
+        this.player.deck.push(card);
+        sound.playShopBuy();
+        entryDom.classList.add('claimed');
+        this.updateTopBar();
+        this.saveGame();
+      }, null, cards);
+    }
+
+    obtainRelic(relicId) {
+      if (!this.player.relics.includes(relicId)) {
+        this.player.relics.push(relicId);
+        const r = RELICS_DB[relicId];
+        if (r && r.onObtain) r.onObtain(this);
+        this.updateTopBar();
+      }
+    }
+
+    openRestSite() {
+      const healPercent = this.meta.currentAscension >= 3 ? 0.20 : 0.30;
+      const healAmount = Math.floor(this.player.maxHp * healPercent);
+      this.dom.restHealDesc.textContent = `체력을 ${healAmount} 회복합니다 (${Math.round(healPercent * 100)}%).`;
+      this.showScreen(this.dom.restScreen);
+      this.saveGame();
+    }
+
+    handleRestHeal() {
+      sound.playBuff();
+      const healPercent = this.meta.currentAscension >= 3 ? 0.20 : 0.30;
+      const healAmount = Math.floor(this.player.maxHp * healPercent);
+      this.healPlayer(healAmount);
+      this.proceedToMap();
+    }
+
+    handleRestSmith() {
+      sound.playClick();
+      const upgradable = this.player.deck.filter(c => !c.upgraded);
+      if (upgradable.length === 0) {
+        alert('모든 카드가 이미 제련되었습니다!');
+        return;
+      }
+      this.openCardSelectModal('제련할 카드를 선택하세요 (+ 강화)', card => {
+        card.upgraded = true;
+        sound.playShopBuy();
+        this.proceedToMap();
+      }, c => !c.upgraded);
+    }
+
+    openShop() {
+      this.dom.shopCardsContainer.innerHTML = '';
+      this.dom.shopRelicsContainer.innerHTML = '';
+      this.dom.shopRemovalPrice.textContent = `💰 ${this.cardRemovalCost} G`;
+
+      // 5 Random Cards for Sale
+      const cardKeys = this.shuffle(Object.keys(CARDS_DB).filter(k => CARDS_DB[k].rarity !== 'basic')).slice(0, 5);
+      cardKeys.forEach((key, idx) => {
+        const card = this.createCardInstance(key);
+        let price = card.rarity === 'rare' ? 140 : (card.rarity === 'uncommon' ? 95 : 60);
+        if (idx === 0) price = Math.floor(price * 0.7); // 30% discount sale!
+
+        const wrap = document.createElement('div');
+        wrap.className = 'shop-item-wrap';
+        const cardEl = this.createCardElement(card);
+
+        const priceBtn = document.createElement('button');
+        priceBtn.className = 'shop-price-tag';
+        priceBtn.innerHTML = `💰 ${price} G ${idx === 0 ? '(세일!)' : ''}`;
+        priceBtn.style.cursor = 'pointer';
+
+        const buy = () => {
+          if (this.player.gold >= price) {
+            this.player.gold -= price;
+            this.player.deck.push(card);
+            sound.playShopBuy();
+            wrap.remove();
+            this.updateTopBar();
+            this.saveGame();
+          } else {
+            alert('골드가 부족합니다!');
+          }
+        };
+        cardEl.onclick = buy;
+        priceBtn.onclick = buy;
+
+        wrap.appendChild(cardEl);
+        wrap.appendChild(priceBtn);
+        this.dom.shopCardsContainer.appendChild(wrap);
+      });
+
+      // 2 Random Relics for Sale
+      const unownedRelics = this.shuffle(Object.keys(RELICS_DB).filter(r => !this.player.relics.includes(r))).slice(0, 2);
+      unownedRelics.forEach(rId => {
+        const relic = RELICS_DB[rId];
+        const price = Math.floor(Math.random() * 50) + 160;
+
+        const entry = document.createElement('div');
+        entry.className = 'shop-relic-entry';
+        entry.innerHTML = `
+          <div style="font-size:2rem;">${relic.icon}</div>
+          <div>
+            <div style="font-weight:800; color:var(--accent-gold);">${relic.name}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${relic.desc}</div>
+          </div>
+          <div class="shop-price-tag">💰 ${price} G</div>
+        `;
+        entry.onclick = () => {
+          if (this.player.gold >= price) {
+            this.player.gold -= price;
+            this.obtainRelic(rId);
+            sound.playShopBuy();
+            entry.remove();
+            this.updateTopBar();
+            this.saveGame();
+          } else {
+            alert('골드가 부족합니다!');
+          }
+        };
+        this.dom.shopRelicsContainer.appendChild(entry);
+      });
+
+      this.showScreen(this.dom.shopScreen);
+      this.saveGame();
+    }
+
+    handleShopCardRemoval() {
+      if (this.player.gold < this.cardRemovalCost) {
+        alert('골드가 부족합니다!');
+        return;
+      }
+      this.openCardSelectModal('영구 제거할 카드를 선택하세요', card => {
+        const idx = this.player.deck.indexOf(card);
+        if (idx !== -1) {
+          this.player.deck.splice(idx, 1);
+          this.player.gold -= this.cardRemovalCost;
+          this.cardRemovalCost += 25;
+          sound.playShopBuy();
+          this.dom.shopRemovalPrice.textContent = `💰 ${this.cardRemovalCost} G`;
+          this.updateTopBar();
+          this.saveGame();
+        }
+      });
+    }
+
+    openEvent() {
+      const event = EVENTS_DB[Math.floor(Math.random() * EVENTS_DB.length)];
+      this.dom.eventTitle.textContent = event.title;
+      this.dom.eventLore.textContent = event.lore;
+      this.dom.eventChoices.innerHTML = '';
+
+      event.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'event-btn';
+        btn.textContent = choice.text;
+        btn.onclick = () => {
+          sound.playClick();
+          const resultMsg = choice.action(this);
+          if (resultMsg) {
+            this.dom.eventLore.textContent = resultMsg;
+            this.dom.eventChoices.innerHTML = `
+              <button class="event-btn" style="text-align:center;" onclick="game.proceedToMap()">지도로 이동</button>
+            `;
+          }
+          this.updateTopBar();
+          this.saveGame();
+        };
+        this.dom.eventChoices.appendChild(btn);
+      });
+
+      this.showScreen(this.dom.eventScreen);
+      this.saveGame();
+    }
+
+    /* =========================================================================
+       11. MODAL VIEWERS & UTILITIES
+       ========================================================================= */
+    openDeckViewer(title, cardList) {
+      sound.playClick();
+      this.dom.modalDeckTitle.textContent = `${title} (${cardList.length}장)`;
+      this.dom.modalDeckGrid.innerHTML = '';
+      cardList.forEach(c => {
+        this.dom.modalDeckGrid.appendChild(this.createCardElement(c));
+      });
+      this.dom.modalDeckViewer.classList.add('active');
+    }
+
+    openCardSelectModal(title, onSelectCallback, filterFn = null, customList = null) {
+      this.dom.modalSelectTitle.textContent = title;
+      this.dom.modalSelectGrid.innerHTML = '';
+      const pool = customList || this.player.deck;
+      const filtered = filterFn ? pool.filter(filterFn) : pool;
+
+      filtered.forEach(c => {
+        const el = this.createCardElement(c);
+        el.onclick = () => {
+          this.dom.modalCardSelect.classList.remove('active');
+          onSelectCallback(c);
+        };
+        this.dom.modalSelectGrid.appendChild(el);
+      });
+      this.dom.modalCardSelect.classList.add('active');
+    }
+
+    shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+  }
+
+  // Initialize Game Instance
+  const game = new IronAscensionGame();
+  window.game = game;
+  </script>
+</body>
+</html>
